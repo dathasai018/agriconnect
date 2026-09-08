@@ -48,8 +48,7 @@ export const LandingPage: React.FC = () => {
             <div className="pt-4 flex flex-wrap justify-center gap-3.5">
               <button
                 onClick={() => {
-                  setActiveRole('farmer');
-                  setFarmerTab('govt');
+                  openAuthModal('farmer');
                 }}
                 className="px-6 py-3.5 rounded-xl gradient-agri text-[#212121] font-bold text-sm shadow-lg shadow-[#0D7377]/20 hover:opacity-95 transition-all flex items-center gap-2 glow-btn"
               >
@@ -59,7 +58,9 @@ export const LandingPage: React.FC = () => {
               </button>
 
               <button
-                onClick={() => setActiveRole('customer')}
+                onClick={() => {
+                  openAuthModal('customer');
+                }}
                 className="px-6 py-3.5 rounded-xl bg-white hover:bg-gray-50 text-[#212121] font-bold text-sm border border-gray-300 shadow-sm transition-all flex items-center gap-2"
               >
                 <ShoppingBag className="w-4 h-4 text-[#0D7377]" />
@@ -67,7 +68,9 @@ export const LandingPage: React.FC = () => {
               </button>
 
               <button
-                onClick={() => setActiveRole('admin')}
+                onClick={() => {
+                  openAuthModal('admin');
+                }}
                 className="px-6 py-3.5 rounded-xl bg-[#212121] hover:bg-black text-white font-bold text-sm shadow-sm transition-all flex items-center gap-2"
               >
                 <Building2 className="w-4 h-4 text-[#14FFEC]" />

@@ -526,38 +526,116 @@ app.get('/api/admin/kpi', authenticate, requireRole('admin'), (req, res) => {
 // ═══════════════════════════════════════════════════════════════════
 
 app.post('/api/ai/chat', (req, res) => {
-  const { message } = req.body;
+  const { message, language } = req.body;
   const lower = (message || '').toLowerCase();
+  const lang = language || 'en';
+
+  // Multilingual response maps
+  const responses = {
+    slot: {
+      en: 'AgriConnect Forecaster suggests tomorrow 07:00 AM - 09:00 AM for lowest wait time (~18 mins). Shall I book that slot for you?',
+      hi: 'AgriConnect पूर्वानुमान के अनुसार कल 07:00 बजे - 09:00 बजे सबसे कम प्रतीक्षा समय (~18 मिनट) है। क्या मैं यह स्लॉट आपके लिए बुक करूँ?',
+      te: 'AgriConnect అంచనా ప్రకారం రేపు 07:00 AM - 09:00 AM వరకు వేచి ఉండే సమయం అత్యల్పం (~18 నిమిషాలు). ఈ స్లాట్ బుక్ చేయమంటారా?',
+      ta: 'AgriConnect கணிப்பின்படி நாளை காலை 07:00 - 09:00 மணிக்கு காத்திருக்கும் நேரம் குறைவாக (~18 நிமிடங்கள்) இருக்கும். இந்த ஸ்லாட்டை பதிவு செய்யட்டுமா?',
+      mr: 'AgriConnect अंदाजानुसार उद्या सकाळी 07:00 - 09:00 दरम्यान प्रतीक्षा वेळ सर्वात कमी (~18 मिनिटे) आहे. मी हा स्लॉट बुक करू का?',
+      pa: 'AgriConnect ਦੇ ਅਨੁਮਾਨ ਅਨੁਸਾਰ ਕੱਲ੍ਹ ਸਵੇਰੇ 07:00 - 09:00 ਵਜੇ ਉਡੀਕ ਦਾ ਸਮਾਂ ਸਭ ਤੋਂ ਘੱਟ (~18 ਮਿੰਟ) ਹੋਵੇਗਾ। ਕੀ ਮੈਂ ਇਹ ਸਲਾਟ ਬੁੱਕ ਕਰਾਂ?'
+    },
+    msp: {
+      en: 'Current MSP for Paddy (Grade A) is ₹2,320/Qtl for Kharif 2025-26. Open market Basmati is at ₹3,850/Qtl (+66% premium). Sell FAQ Paddy via govt procurement and Basmati direct to buyers.',
+      hi: 'धान (ग्रेड A) का वर्तमान न्यूनतम समर्थन मूल्य ₹2,320/क्विंटल (खरीफ 2025-26) है। बासमती खुले बाज़ार में ₹3,850/क्विंटल (+66% प्रीमियम) पर है। FAQ धान सरकारी खरीद से और बासमती सीधे खरीदारों को बेचें।',
+      te: 'వరి (గ్రేడ్ A) కు ప్రస్తుత MSP ₹2,320/క్వింటల్ (ఖరీఫ్ 2025-26). బాస్మతి ఓపెన్ మార్కెట్‌లో ₹3,850/క్వింటల్ (+66% ప్రీమియం). FAQ వరిని ప్రభుత్వ కొనుగోలు ద్వారా మరియు బాస్మతిని నేరుగా కొనుగోలుదారులకు అమ్మండి.',
+      ta: 'நெல் (தரம் A) க்கான தற்போதைய MSP ₹2,320/குவிண்டால் (கரிஃப் 2025-26). பாஸ்மதி திறந்த சந்தையில் ₹3,850/குவிண்டால் (+66% பிரீமியம்). FAQ நெல்லை அரசு கொள்முதல் மூலமும் பாஸ்மதியை நேரடியாக வாங்குபவர்களுக்கும் விற்கவும்.',
+      mr: 'भात (दर्जा A) साठी सध्याचा MSP ₹2,320/क्विंटल (खरीफ 2025-26) आहे. बासमती खुल्या बाजारात ₹3,850/क्विंटल (+66% प्रीमियम) आहे. FAQ भात सरकारी खरेदीद्वारे आणि बासमती थेट खरेदीदारांना विका.',
+      pa: 'ਝੋਨੇ (ਗ੍ਰੇਡ A) ਦਾ ਮੌਜੂਦਾ MSP ₹2,320/ਕੁਇੰਟਲ (ਖਰੀਫ 2025-26) ਹੈ। ਬਾਸਮਤੀ ਖੁੱਲ੍ਹੇ ਬਾਜ਼ਾਰ ਵਿੱਚ ₹3,850/ਕੁਇੰਟਲ (+66% ਪ੍ਰੀਮੀਅਮ) ਹੈ। FAQ ਝੋਨਾ ਸਰਕਾਰੀ ਖਰੀਦ ਰਾਹੀਂ ਅਤੇ ਬਾਸਮਤੀ ਸਿੱਧੇ ਖਰੀਦਦਾਰਾਂ ਨੂੰ ਵੇਚੋ।'
+    },
+    weather: {
+      en: 'Weather Alert: Rain expected today 2-5 PM (75% chance). Thursday and Friday excellent for mandi visits. Avoid Saturday due to heavy thunderstorms (85% chance).',
+      hi: 'मौसम चेतावनी: आज दोपहर 2-5 बजे बारिश की संभावना (75%)। गुरुवार और शुक्रवार मंडी दौरे के लिए उत्तम हैं। शनिवार भारी तूफान के कारण (85%) बचें।',
+      te: 'వాతావరణ హెచ్చరిక: ఈరోజు మధ్యాహ్నం 2-5 గంటలకు వర్షం (75% అవకాశం). గురువారం మరియు శుక్రవారం మండీ సందర్శనకు అనుకూలం. శనివారం భారీ వర్షం (85%) వల్ల నివారించండి.',
+      ta: 'வானிலை எச்சரிக்கை: இன்று பிற்பகல் 2-5 மணிக்கு மழை (75% வாய்ப்பு). வியாழன் மற்றும் வெள்ளி மண்டி வருகைக்கு சிறந்தது. சனிக்கிழமை கடும் மழை (85%) காரணமாக தவிர்க்கவும்.',
+      mr: 'हवामान इशारा: आज दुपारी 2-5 वाजता पाऊस होण्याची शक्यता (75%). गुरुवार आणि शुक्रवार मंडी भेटीसाठी उत्तम. शनिवारी जड वादळामुळे (85%) टाळा.',
+      pa: 'ਮੌਸਮ ਚੇਤਾਵਨੀ: ਅੱਜ ਦੁਪਹਿਰ 2-5 ਵਜੇ ਮੀਂਹ ਦੀ ਸੰਭਾਵਨਾ (75%)। ਵੀਰਵਾਰ ਅਤੇ ਸ਼ੁੱਕਰਵਾਰ ਮੰਡੀ ਦੌਰੇ ਲਈ ਵਧੀਆ ਹਨ। ਭਾਰੀ ਤੂਫ਼ਾਨ (85%) ਕਾਰਨ ਸ਼ਨੀਵਾਰ ਤੋਂ ਬਚੋ।'
+    },
+    queue: {
+      en: 'Current queue at Warangal Mandi: 3 trucks ahead. Estimated wait: 24 minutes. Your token is TK-105 at Bay #4.',
+      hi: 'वारंगल मंडी में वर्तमान कतार: 3 ट्रक आगे। अनुमानित प्रतीक्षा: 24 मिनट। आपका टोकन TK-105 बे #4 पर है।',
+      te: 'వరంగల్ మండీలో ప్రస్తుత క్యూ: 3 ట్రక్కులు ముందు. అంచనా వేచి ఉండే సమయం: 24 నిమిషాలు. మీ టోకెన్ TK-105 బే #4 దగ్గర.',
+      ta: 'வாரங்கல் மண்டியில் தற்போதைய வரிசை: 3 வாகனங்கள் முன்னால். மதிப்பிடப்பட்ட காத்திருக்கும் நேரம்: 24 நிமிடங்கள். உங்கள் டோக்கன் TK-105 பே #4 இல் உள்ளது.',
+      mr: 'वारंगल मंडीतील सध्याची रांग: 3 ट्रक पुढे. अंदाजे प्रतीक्षा: 24 मिनिटे. तुमचा टोकन TK-105 बे #4 वर आहे.',
+      pa: 'ਵਾਰੰਗਲ ਮੰਡੀ ਵਿੱਚ ਮੌਜੂਦਾ ਕਤਾਰ: 3 ਟਰੱਕ ਅੱਗੇ। ਅਨੁਮਾਨਿਤ ਉਡੀਕ: 24 ਮਿੰਟ। ਤੁਹਾਡਾ ਟੋਕਨ TK-105 ਬੇ #4 ਤੇ ਹੈ।'
+    },
+    greeting: {
+      en: 'Namaste! I am your AgriConnect AI Assistant. I can help with slot booking, MSP prices, queue updates, weather alerts, payment status, and marketplace listings. What can I help you with today?',
+      hi: 'नमस्ते! मैं आपका AgriConnect AI सहायक हूँ। मैं स्लॉट बुकिंग, MSP मूल्य, कतार अपडेट, मौसम चेतावनी, भुगतान स्थिति और मार्केटप्लेस लिस्टिंग में सहायता कर सकता हूँ। आज मैं आपकी कैसे मदद करूँ?',
+      te: 'నమస్కారం! నేను మీ AgriConnect AI సహాయకుడిని. స్లాట్ బుకింగ్, MSP ధరలు, క్యూ అప్‌డేట్‌లు, వాతావరణ హెచ్చరికలు, చెల్లింపు స్థితి మరియు మార్కెట్‌ప్లేస్ జాబితాలలో నేను సహాయం చేయగలను. ఈరోజు మీకు ఏమి సహాయం కావాలి?',
+      ta: 'வணக்கம்! நான் உங்கள் AgriConnect AI உதவியாளர். ஸ்லாட் பதிவு, MSP விலைகள், வரிசை புதுப்பிப்புகள், வானிலை எச்சரிக்கைகள், பணம் செலுத்தும் நிலை மற்றும் சந்தை பட்டியல்களில் நான் உதவ முடியும். இன்று நான் உங்களுக்கு எப்படி உதவலாம்?',
+      mr: 'नमस्कार! मी तुमचा AgriConnect AI सहाय्यक आहे. स्लॉट बुकिंग, MSP किमती, रांग अपडेट, हवामान इशारे, देयक स्थिती आणि मार्केटप्लेस लिस्टिंगमध्ये मी मदत करू शकतो. आज मी तुम्हाला कशी मदत करू?',
+      pa: 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ! ਮੈਂ ਤੁਹਾਡਾ AgriConnect AI ਸਹਾਇਕ ਹਾਂ। ਮੈਂ ਸਲਾਟ ਬੁਕਿੰਗ, MSP ਕੀਮਤਾਂ, ਕਤਾਰ ਅਪਡੇਟ, ਮੌਸਮ ਚੇਤਾਵਨੀ, ਭੁਗਤਾਨ ਸਥਿਤੀ ਅਤੇ ਮਾਰਕੀਟਪਲੇਸ ਸੂਚੀਆਂ ਵਿੱਚ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ। ਅੱਜ ਮੈਂ ਤੁਹਾਡੀ ਕਿਵੇਂ ਮਦਦ ਕਰਾਂ?'
+    },
+    market: {
+      en: 'I can help you create a marketplace listing! Basmati Paddy is fetching ₹3,850-4,200/Qtl from mill buyers. Shall I open the listing form?',
+      hi: 'मैं मार्केटप्लेस लिस्टिंग बनाने में मदद कर सकता हूँ! बासमती धान मिल खरीदारों से ₹3,850-4,200/क्विंटल मिल रहा है। क्या मैं लिस्टिंग फॉर्म खोलूँ?',
+      te: 'నేను మార్కెట్‌ప్లేస్ లిస్టింగ్ సృష్టించడంలో సహాయం చేయగలను! బాస్మతి వరి మిల్ కొనుగోలుదారులకు ₹3,850-4,200/క్వింటల్ వస్తోంది. లిస్టింగ్ ఫారమ్ తెరవమంటారా?',
+      ta: 'சந்தை பட்டியல் உருவாக்க உதவலாம்! பாஸ்மதி நெல் மில் வாங்குபவர்களிடம் ₹3,850-4,200/குவிண்டால் கிடைக்கிறது. பட்டியல் படிவத்தை திறக்கட்டுமா?',
+      mr: 'मी मार्केटप्लेस लिस्टिंग तयार करण्यात मदत करू शकतो! बासमती भात मिल खरेदीदारांकडून ₹3,850-4,200/क्विंटल मिळत आहे. लिस्टिंग फॉर्म उघडू का?',
+      pa: 'ਮੈਂ ਮਾਰਕੀਟਪਲੇਸ ਸੂਚੀ ਬਣਾਉਣ ਵਿੱਚ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ! ਬਾਸਮਤੀ ਝੋਨਾ ਮਿੱਲ ਖਰੀਦਦਾਰਾਂ ਤੋਂ ₹3,850-4,200/ਕੁਇੰਟਲ ਮਿਲ ਰਿਹਾ ਹੈ। ਕੀ ਮੈਂ ਸੂਚੀ ਫਾਰਮ ਖੋਲ੍ਹਾਂ?'
+    }
+  };
+
+  const getReply = (key) => (responses[key][lang] || responses[key]['en']);
+
   let response = { text: null, richCardType: null, richData: null, ticketId: null };
 
-  if (lower.includes('slot') || lower.includes('book') || lower.includes('tomorrow')) {
-    response.text = 'AgriConnect Forecaster suggests tomorrow 07:00 AM - 09:00 AM for lowest wait time (~18 mins). Shall I book that slot for you?';
+  if (lower.includes('slot') || lower.includes('book') || lower.includes('tomorrow') ||
+      lower.includes('स्लॉट') || lower.includes('బుక') || lower.includes('நாளை') || lower.includes('ਸਲਾਟ')) {
+    response.text = getReply('slot');
     response.richCardType = 'slot';
     response.richData = { centreName: 'Warangal APMC Yard', time: 'Tomorrow, 07:00 AM', waitEst: '18 mins', bay: 'Bay #1' };
-  } else if (lower.includes('msp') || lower.includes('price') || lower.includes('rate')) {
-    response.text = 'Current MSP for Paddy (Grade A) is ₹2,320/Qtl for Kharif 2025-26. Open market Basmati is at ₹3,850/Qtl (+66% premium). Sell FAQ Paddy via govt procurement and Basmati direct to buyers.';
+  } else if (lower.includes('msp') || lower.includes('price') || lower.includes('rate') ||
+             lower.includes('मूल्य') || lower.includes('ధర') || lower.includes('விலை') || lower.includes('ਕੀਮਤ')) {
+    response.text = getReply('msp');
     response.richCardType = 'price_check';
     response.richData = { mspPrice: 2320, marketPrice: 3850, crop: 'Paddy' };
-  } else if (lower.includes('weather') || lower.includes('rain')) {
-    response.text = 'Weather Alert: Rain expected today 2-5 PM (75% chance). Thursday and Friday excellent for mandi visits. Avoid Saturday due to heavy thunderstorms (85% chance).';
-  } else if (lower.includes('queue') || lower.includes('wait') || lower.includes('how long')) {
-    response.text = 'Current queue at Warangal Mandi: 3 trucks ahead. Estimated wait: 24 minutes. Your token is TK-105 at Bay #4.';
-  } else if (lower.includes('payment') || lower.includes('dispute') || lower.includes('delay') || lower.includes('issue') || lower.includes('problem')) {
+  } else if (lower.includes('weather') || lower.includes('rain') ||
+             lower.includes('मौसम') || lower.includes('వాతావరణ') || lower.includes('மழை') || lower.includes('ਮੌਸਮ')) {
+    response.text = getReply('weather');
+  } else if (lower.includes('queue') || lower.includes('wait') || lower.includes('how long') ||
+             lower.includes('कतार') || lower.includes('క్యూ') || lower.includes('வரிசை') || lower.includes('ਕਤਾਰ')) {
+    response.text = getReply('queue');
+  } else if (lower.includes('payment') || lower.includes('dispute') || lower.includes('delay') ||
+             lower.includes('भुगतान') || lower.includes('చెల్లింపు') || lower.includes('பணம்') || lower.includes('ਭੁਗਤਾਨ')) {
     const ticketId = 'AGRI-TKT-' + Math.floor(1000 + Math.random() * 9000);
     const data = readData();
     if (!data.supportTickets) data.supportTickets = [];
     data.supportTickets.push({ id: ticketId, topic: message, status: 'open', createdAt: new Date().toISOString() });
     writeData(data);
-    response.text = `Your concern has been escalated to the District Marketing Officer. Ticket #${ticketId} created. Resolution expected within 4 hours.`;
+    const paymentReplies = {
+      en: `Your concern has been escalated to the District Marketing Officer. Ticket #${ticketId} created. Resolution expected within 4 hours.`,
+      hi: `आपकी शिकायत जिला विपणन अधिकारी को भेज दी गई है। टिकट #${ticketId} बनाया गया। 4 घंटे में समाधान की उम्मीद है।`,
+      te: `మీ సమస్యను జిల్లా మార్కెటింగ్ అధికారికి పంపించారు. టికెట్ #${ticketId} సృష్టించబడింది. 4 గంటల్లో పరిష్కారం అంచనా వేయబడుతోంది.`,
+      ta: `உங்கள் புகார் மாவட்ட சந்தைப்படுத்தல் அதிகாரிக்கு அனுப்பப்பட்டது. டிக்கட் #${ticketId} உருவாக்கப்பட்டது. 4 மணி நேரத்தில் தீர்வு எதிர்பார்க்கப்படுகிறது.`,
+      mr: `तुमची तक्रार जिल्हा विपणन अधिकाऱ्याकडे पाठवली गेली आहे. तिकीट #${ticketId} तयार केले. 4 तासांत निराकरण अपेक्षित आहे.`,
+      pa: `ਤੁਹਾਡੀ ਸ਼ਿਕਾਇਤ ਜ਼ਿਲ੍ਹਾ ਮਾਰਕੀਟਿੰਗ ਅਧਿਕਾਰੀ ਨੂੰ ਭੇਜ ਦਿੱਤੀ ਗਈ ਹੈ। ਟਿਕਟ #${ticketId} ਬਣਾਇਆ ਗਿਆ। 4 ਘੰਟਿਆਂ ਵਿੱਚ ਹੱਲ ਦੀ ਉਮੀਦ ਹੈ।`
+    };
+    response.text = paymentReplies[lang] || paymentReplies['en'];
     response.richCardType = 'ticket';
     response.richData = { ticketId, category: 'Payment Escalation', status: 'Assigned to Mandi Secretary', eta: '4 hours' };
     response.ticketId = ticketId;
-  } else if (lower.includes('market') || lower.includes('sell') || lower.includes('listing')) {
-    response.text = 'I can help you create a marketplace listing! Basmati Paddy is fetching ₹3,850-4,200/Qtl from mill buyers. Shall I open the listing form?';
-  } else if (lower.match(/^(hi|hello|namaste|hey)/)) {
-    response.text = 'Namaste! I am your AgriConnect AI Assistant. I can help with slot booking, MSP prices, queue updates, weather alerts, payment status, and marketplace listings. What can I help you with today?';
+  } else if (lower.includes('market') || lower.includes('sell') || lower.includes('listing') ||
+             lower.includes('बाज़ार') || lower.includes('మార్కెట్') || lower.includes('சந்தை') || lower.includes('ਬਾਜ਼ਾਰ')) {
+    response.text = getReply('market');
+  } else if (lower.match(/^(hi|hello|namaste|hey|नमस्ते|నమస్కారం|வணக்கம்|ਸਤਿ)/)) {
+    response.text = getReply('greeting');
   } else {
-    response.text = `I received your query about "${message}". Mandi operations are running smoothly. Ask me about: slot booking, MSP prices, queue status, weather, or payment issues.`;
+    const defaultReplies = {
+      en: `I received your query about "${message}". Mandi operations are running smoothly. Ask me about: slot booking, MSP prices, queue status, weather, or payment issues.`,
+      hi: `"${message}" के बारे में आपकी क्वेरी प्राप्त हुई। मंडी संचालन सुचारू रूप से चल रहा है। स्लॉट बुकिंग, MSP मूल्य, कतार स्थिति, मौसम या भुगतान समस्याओं के बारे में पूछें।`,
+      te: `"${message}" గురించి మీ ప్రశ్న అందింది. మండీ కార్యకలాపాలు సజావుగా జరుగుతున్నాయి. స్లాట్ బుకింగ్, MSP ధరలు, క్యూ స్థితి, వాతావరణం లేదా చెల్లింపు సమస్యల గురించి అడగండి.`,
+      ta: `"${message}" பற்றிய உங்கள் கேள்வி பெறப்பட்டது. மண்டி செயல்பாடுகள் சீராக நடக்கின்றன. ஸ்லாட் பதிவு, MSP விலைகள், வரிசை நிலை, வானிலை அல்லது பணம் செலுத்தும் சிக்கல்கள் பற்றி கேளுங்கள்.`,
+      mr: `"${message}" बद्दल तुमची क्वेरी प्राप्त झाली. मंडी कार्यक्रम सुरळीत चालू आहे. स्लॉट बुकिंग, MSP किमती, रांग स्थिती, हवामान किंवा देयक समस्यांबद्दल विचारा.`,
+      pa: `"${message}" ਬਾਰੇ ਤੁਹਾਡੀ ਪੁੱਛਗਿੱਛ ਪ੍ਰਾਪਤ ਹੋਈ। ਮੰਡੀ ਕਾਰਜ ਸੁਚਾਰੂ ਚੱਲ ਰਿਹਾ ਹੈ। ਸਲਾਟ ਬੁਕਿੰਗ, MSP ਕੀਮਤਾਂ, ਕਤਾਰ ਸਥਿਤੀ, ਮੌਸਮ ਜਾਂ ਭੁਗਤਾਨ ਸਮੱਸਿਆਵਾਂ ਬਾਰੇ ਪੁੱਛੋ।`
+    };
+    response.text = defaultReplies[lang] || defaultReplies['en'];
   }
 
   // Simulate AI latency (600-1400ms)

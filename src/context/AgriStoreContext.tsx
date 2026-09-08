@@ -710,7 +710,9 @@ interface AgriStoreContextType {
     aadhaar: string;
     village: string;
     selectedCentreId: string;
+    aadhaarVerified?: boolean;
   };
+  updateCurrentUserAadhaar: (aadhaarNum: string) => void;
   centres: ProcurementCentre[];
   selectedCentreId: string;
   setSelectedCentreId: (id: string) => void;
@@ -772,7 +774,8 @@ export const AgriStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           phone: u.phone ? `+91 ${u.phone}` : '+91 98480 23456',
           aadhaar: u.aadhaar || 'XXXX XXXX 8742',
           village: u.village || 'Warangal Rural',
-          selectedCentreId: u.centreId || 'centre-1'
+          selectedCentreId: u.centreId || 'centre-1',
+          aadhaarVerified: u.aadhaarVerified || false
         };
       } catch (_) {}
     }
@@ -781,9 +784,29 @@ export const AgriStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       phone: '+91 98480 23456',
       aadhaar: 'XXXX XXXX 8742',
       village: 'Narsampet, Warangal Rural',
-      selectedCentreId: 'centre-1'
+      selectedCentreId: 'centre-1',
+      aadhaarVerified: true
     };
   });
+
+  const updateCurrentUserAadhaar = (aadhaarNum: string) => {
+    const masked = aadhaarNum.length === 12
+      ? `XXXX XXXX ${aadhaarNum.slice(-4)}`
+      : aadhaarNum;
+    setCurrentUser(prev => {
+      const updated = { ...prev, aadhaar: masked, aadhaarVerified: true };
+      const savedUser = localStorage.getItem('agri_user');
+      if (savedUser) {
+        try {
+          const u = JSON.parse(savedUser);
+          u.aadhaar = masked;
+          u.aadhaarVerified = true;
+          localStorage.setItem('agri_user', JSON.stringify(u));
+        } catch (_) {}
+      }
+      return updated;
+    });
+  };
 
   const [centres] = useState<ProcurementCentre[]>(INITIAL_CENTRES);
   const [selectedCentreId, setSelectedCentreId] = useState<string>('centre-1');
@@ -856,7 +879,8 @@ export const AgriStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           phone: u.phone ? `+91 ${u.phone}` : '+91 98480 23456',
           aadhaar: u.aadhaar || 'XXXX XXXX 8742',
           village: u.village || 'Warangal Rural',
-          selectedCentreId: u.centreId || 'centre-1'
+          selectedCentreId: u.centreId || 'centre-1',
+          aadhaarVerified: u.aadhaarVerified ?? true
         });
       } catch (_) {}
     }
@@ -1057,11 +1081,12 @@ export const AgriStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setIsAiThinking(true);
 
     try {
+      const language = localStorage.getItem('agri_lang') || 'en';
       // Send message to real backend AI service
       const res = await fetch('https://agriconnect-api-q2bv.onrender.com/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text })
+        body: JSON.stringify({ message: text, language })
       });
       if (res.ok) {
         const data = await res.json();
@@ -1186,6 +1211,7 @@ export const AgriStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         loginAs,
         logout,
         currentUser,
+        updateCurrentUserAadhaar,
         centres,
         selectedCentreId,
         setSelectedCentreId,
