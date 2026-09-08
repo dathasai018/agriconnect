@@ -750,18 +750,39 @@ interface AgriStoreContextType {
 const AgriStoreContext = createContext<AgriStoreContextType | undefined>(undefined);
 
 export const AgriStoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [activeRole, setActiveRole] = useState<UserRole | null>('farmer');
+  // Check localStorage for saved session
+  const [activeRole, setActiveRole] = useState<UserRole | null>(() => {
+    const saved = localStorage.getItem('agri_role');
+    return (saved as UserRole) || null;
+  });
   const [farmerTab, setFarmerTab] = useState<FarmerInterfaceTab>('govt');
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return !!localStorage.getItem('agri_token');
+  });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [authPreselectedRole, setAuthPreselectedRole] = useState<UserRole>('farmer');
 
-  const [currentUser] = useState({
-    name: 'Rameshwar Patel',
-    phone: '+91 98480 23456',
-    aadhaar: 'XXXX XXXX 8742',
-    village: 'Narsampet, Warangal Rural',
-    selectedCentreId: 'centre-1'
+  const [currentUser, setCurrentUser] = useState(() => {
+    const savedUser = localStorage.getItem('agri_user');
+    if (savedUser) {
+      try {
+        const u = JSON.parse(savedUser);
+        return {
+          name: u.name || 'Registered Farmer',
+          phone: u.phone ? `+91 ${u.phone}` : '+91 98480 23456',
+          aadhaar: u.aadhaar || 'XXXX XXXX 8742',
+          village: u.village || 'Warangal Rural',
+          selectedCentreId: u.centreId || 'centre-1'
+        };
+      } catch (_) {}
+    }
+    return {
+      name: 'Rameshwar Patel',
+      phone: '+91 98480 23456',
+      aadhaar: 'XXXX XXXX 8742',
+      village: 'Narsampet, Warangal Rural',
+      selectedCentreId: 'centre-1'
+    };
   });
 
   const [centres] = useState<ProcurementCentre[]>(INITIAL_CENTRES);
@@ -823,12 +844,32 @@ export const AgriStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setActiveRole(role);
     setIsAuthenticated(true);
     setIsAuthModalOpen(false);
-    addToast('success', 'Logged in Successfully', `Welcome to AgriConnect as ${role.toUpperCase()}`);
+    localStorage.setItem('agri_role', role);
+    
+    // Check if stored user was saved by auth client
+    const saved = localStorage.getItem('agri_user');
+    if (saved) {
+      try {
+        const u = JSON.parse(saved);
+        setCurrentUser({
+          name: u.name || (role === 'farmer' ? 'Rameshwar Patel' : role === 'customer' ? 'FreshGrain Buyer' : 'Mandi Secretary'),
+          phone: u.phone ? `+91 ${u.phone}` : '+91 98480 23456',
+          aadhaar: u.aadhaar || 'XXXX XXXX 8742',
+          village: u.village || 'Warangal Rural',
+          selectedCentreId: u.centreId || 'centre-1'
+        });
+      } catch (_) {}
+    }
+    
+    addToast('success', 'Signed In Successfully', `Welcome to AgriConnect as ${role.toUpperCase()}`);
   };
 
   const logout = () => {
     setActiveRole(null);
     setIsAuthenticated(false);
+    localStorage.removeItem('agri_role');
+    localStorage.removeItem('agri_token');
+    localStorage.removeItem('agri_user');
     addToast('info', 'Logged Out', 'You have been safely signed out of your session.');
   };
 
@@ -1005,7 +1046,7 @@ export const AgriStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     );
   };
 
-  const sendChatMessage = (text: string) => {
+  const sendChatMessage = async (text: string) => {
     const userMsg: ChatMessage = {
       id: 'msg-' + Date.now(),
       sender: 'user',
@@ -1015,6 +1056,31 @@ export const AgriStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setChatMessages((prev) => [...prev, userMsg]);
     setIsAiThinking(true);
 
+    try {
+      // Send message to real backend AI service
+      const res = await fetch('https://agriconnect-api-q2bv.onrender.com/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setIsAiThinking(false);
+        const aiReply: ChatMessage = {
+          id: 'msg-' + Date.now() + 1,
+          sender: 'gemini',
+          text: data.text || 'I have analyzed your query and updated mandi records.',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          richCardType: data.richCardType,
+          richData: data.richData,
+          suggestions: data.richData?.suggestions || ['Book Tomorrow Slot', 'Check Weather Radar', 'View Open Market']
+        };
+        setChatMessages((prev) => [...prev, aiReply]);
+        return;
+      }
+    } catch (_) {}
+
+    // Fallback if backend is warming up
     setTimeout(() => {
       setIsAiThinking(false);
       const lower = text.toLowerCase();

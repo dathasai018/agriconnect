@@ -70,7 +70,7 @@ export const AuthModal: React.FC = () => {
         loginAs(selectedRole);
         handleClose();
       } else {
-        setError(`Invalid OTP. ${devOtp ? `Dev OTP: ${devOtp}` : 'Try 123456'}`);
+        setError('Invalid or expired OTP. Please verify and try again.');
       }
     } finally {
       setLoading(false);
@@ -151,24 +151,6 @@ export const AuthModal: React.FC = () => {
                 </div>
               </div>
 
-              {/* Demo quick-fill */}
-              <div className="p-3 bg-blue-50 rounded-xl border border-blue-200">
-                <div className="flex items-start gap-2">
-                  <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-[11px] font-bold text-blue-800">🚀 Demo Mode</p>
-                    <p className="text-[11px] text-blue-700 mt-0.5">Pre-filled demo number for <strong>{cfg.label}</strong>:</p>
-                    <button
-                      onClick={() => setPhone(cfg.demo)}
-                      className="mt-1.5 px-2.5 py-1 bg-blue-600 text-white text-[11px] font-bold rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Use {cfg.demo}
-                    </button>
-                    <span className="ml-2 text-[11px] text-blue-600">→ then OTP: <strong>123456</strong></span>
-                  </div>
-                </div>
-              </div>
-
               {error && <p className="text-xs text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-200">{error}</p>}
 
               <button
@@ -185,16 +167,7 @@ export const AuthModal: React.FC = () => {
           {/* Step 2: OTP */}
           {step === 2 && (
             <div className="space-y-4">
-              <p className="text-sm text-gray-600">OTP sent to <strong>+91 {phone}</strong></p>
-
-              {/* Dev OTP Banner */}
-              {devOtp && (
-                <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl">
-                  <p className="text-xs font-bold text-emerald-800">🔓 Dev Mode — Your OTP</p>
-                  <p className="text-3xl font-black text-emerald-700 tracking-[0.3em] mt-1">{devOtp}</p>
-                  <p className="text-[11px] text-emerald-600 mt-1">Universal test OTP: <strong>123456</strong> also works</p>
-                </div>
-              )}
+              <p className="text-sm text-gray-600">Enter the 6-digit verification code sent to <strong>+91 {phone}</strong></p>
 
               <div>
                 <label className="text-xs font-semibold text-gray-600 mb-2 block">

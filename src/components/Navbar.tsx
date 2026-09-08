@@ -32,7 +32,7 @@ export const Navbar: React.FC = () => {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-9 z-30 shadow-xs">
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         {/* Logo and Brand */}
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveRole(null)}>
@@ -43,8 +43,8 @@ export const Navbar: React.FC = () => {
             <div className="flex items-center gap-1.5">
               <span className="text-xl font-extrabold tracking-tight text-[#212121]">{t('brand_title').slice(0, 4)}</span>
               <span className="text-xl font-extrabold tracking-tight text-[#0D7377]">{t('brand_title').slice(4)}</span>
-              <span className="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                {t('prototype_badge')}
+              <span className="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-50 text-[#0D7377] border border-teal-200">
+                Official
               </span>
             </div>
             <p className="text-[11px] text-[#323232]/70 font-medium hidden sm:block">

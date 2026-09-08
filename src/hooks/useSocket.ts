@@ -1,6 +1,8 @@
 import { useEffect, useRef, useCallback } from 'react';
 
-const WS_URL = 'ws://localhost:5000';
+const WS_URL = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+  ? 'ws://localhost:5000'
+  : 'wss://agriconnect-api-q2bv.onrender.com';
 
 type MessageHandler = (event: string, data: unknown) => void;
 

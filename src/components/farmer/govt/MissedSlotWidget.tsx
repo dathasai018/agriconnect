@@ -65,14 +65,7 @@ export const MissedSlotWidget: React.FC = () => {
             </span>
           </div>
 
-          <button
-            onClick={fastForwardTimer}
-            className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all"
-            title="Fast forward countdown for demonstration"
-          >
-            <FastForward className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{t('fast_forward')}</span>
-          </button>
+
 
           <button
             onClick={triggerMissedSlotReassignment}

@@ -1,7 +1,6 @@
 import React from 'react';
 import { AgriStoreProvider, useAgriStore } from './context/AgriStoreContext';
 import { LanguageProvider } from './context/LanguageContext';
-import { DemoQuickBar } from './components/DemoQuickBar';
 import { Navbar } from './components/Navbar';
 import { LandingPage } from './components/LandingPage';
 import { FarmerDashboard } from './components/farmer/FarmerDashboard';
@@ -17,9 +16,6 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA] text-[#212121] selection:bg-[#14FFEC] selection:text-[#212121]">
-      {/* Demo Mode Quick Navigation Bar for Evaluators */}
-      <DemoQuickBar />
-
       {/* Main App Navigation */}
       <Navbar />
 
