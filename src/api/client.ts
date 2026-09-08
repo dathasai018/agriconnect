@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'https://agriconnect-api-q2bv.onrender.com/api';
 
 function getToken(): string | null {
   return localStorage.getItem('agri_token');
