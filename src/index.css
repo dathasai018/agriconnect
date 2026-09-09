@@ -4,80 +4,94 @@
 
 @layer base {
   :root {
-    --brand-dark: #212121;
-    --brand-muted: #323232;
-    --brand-primary: #0D7377;
-    --brand-accent: #14FFEC;
-    --brand-bg: #FAFAFA;
-    --brand-surface: #F5F5F5;
+    --brand-dark: #1E293B;
+    --brand-muted: #475569;
+    --brand-primary: #15803D; /* Agriculture Forest Green */
+    --brand-primary-light: #22C55E;
+    --brand-accent: #F59E0B; /* Warm Golden Harvest */
+    --brand-bg: #F8FAF8;
+    --brand-surface: #FFFFFF;
   }
 
   body {
-    background-color: #FAFAFA;
-    color: #212121;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: #F8FAF8;
+    color: #1E293B;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
 }
 
-/* Custom Scrollbars */
+/* Accessible custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #F1F1F1;
+  background: #F1F5F9;
 }
 ::-webkit-scrollbar-thumb {
   background: #CBD5E1;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #0D7377;
+  background: #15803D;
 }
 
-/* Gradients */
+/* Professional Agriculture Styling (No flashy neon, no college-project gradients) */
 .gradient-agri {
-  background: linear-gradient(135deg, #0D7377 0%, #0ab1a4 60%, #14FFEC 100%);
+  background-color: #15803D;
+  background-image: linear-gradient(135deg, #166534 0%, #15803D 100%);
+  color: #FFFFFF;
 }
 
 .gradient-agri-subtle {
-  background: linear-gradient(135deg, rgba(13, 115, 119, 0.08) 0%, rgba(20, 255, 236, 0.12) 100%);
+  background-color: #F0FDF4;
 }
 
-.gradient-agri-card {
-  background: linear-gradient(145deg, #ffffff 0%, #f7fdfd 100%);
+.card-agri {
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease-in-out;
 }
 
-.text-gradient {
-  background: linear-gradient(135deg, #0D7377 0%, #059b8c 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.card-agri:hover {
+  border-color: #CBD5E1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
 }
 
-/* Glow & Shadows */
-.glow-subtle {
-  box-shadow: 0 4px 20px -2px rgba(13, 115, 119, 0.12), 0 0 15px -3px rgba(20, 255, 236, 0.25);
+.card-agri-interactive {
+  background-color: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 1.25rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
 }
 
-.glow-subtle:hover {
-  box-shadow: 0 8px 30px -4px rgba(13, 115, 119, 0.22), 0 0 20px -2px rgba(20, 255, 236, 0.4);
+.card-agri-interactive:hover {
+  border-color: #15803D;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(21, 128, 61, 0.08);
 }
 
-.glow-btn {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.glow-btn:hover {
-  box-shadow: 0 0 20px rgba(20, 255, 236, 0.6), 0 4px 14px rgba(13, 115, 119, 0.3);
+.card-agri-interactive:active {
+  transform: translateY(0);
 }
 
-/* Live beacon ring */
-@keyframes beacon-glow {
-  0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(20, 255, 236, 0.8); }
-  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(20, 255, 236, 0); }
-  100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(20, 255, 236, 0); }
+/* Safe touch target utility */
+.touch-target {
+  min-height: 48px;
+  min-width: 48px;
 }
 
-.pulse-beacon {
-  animation: beacon-glow 2.2s infinite ease-in-out;
+/* Pulse indicator for live queue/weather status */
+@keyframes soft-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.pulse-soft {
+  animation: soft-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }

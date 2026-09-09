@@ -1296,15 +1296,15 @@ export const AgriStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const data = await res.json();
       setIsAiThinking(false);
 
-      // If an API key was set and server returned an error, show that error in chat
+      // If server returned an error or failed
       if (!res.ok || data.error) {
-        const errorText = data.error || `Server error (${res.status}). Please try again.`;
+        console.error('[Backend AI Error]', data.error || `HTTP ${res.status}`);
         const errReply: ChatMessage = {
           id: 'msg-' + Date.now() + 1,
           sender: 'gemini',
-          text: `⚠️ ${errorText}`,
+          text: 'AI Assistant is temporarily unavailable. Please try again.',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          suggestions: ['Check your API key in Settings', 'Try again', 'View MSP Prices']
+          suggestions: ['Try again', 'Check Mandi Prices', 'Book Slot']
         };
         setChatMessages((prev) => [...prev, errReply]);
         return;
@@ -1321,21 +1321,18 @@ export const AgriStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       };
       setChatMessages((prev) => [...prev, aiReply]);
       return;
-    } catch (networkErr) {
-      // Network error (backend unreachable) — only fall through to keyword fallback if no API key
-      const storedKey = geminiApiKey || localStorage.getItem('agri_gemini_key');
-      if (storedKey) {
-        setIsAiThinking(false);
-        const errReply: ChatMessage = {
-          id: 'msg-' + Date.now() + 1,
-          sender: 'gemini',
-          text: '⚠️ Unable to reach AgriConnect server. Please check your internet connection and try again.',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          suggestions: ['Try again', 'Check connection', 'View MSP Prices']
-        };
-        setChatMessages((prev) => [...prev, errReply]);
-        return;
-      }
+    } catch (networkErr: any) {
+      console.error('[Network Error connecting to AI Assistant]', networkErr?.message);
+      setIsAiThinking(false);
+      const errReply: ChatMessage = {
+        id: 'msg-' + Date.now() + 1,
+        sender: 'gemini',
+        text: 'AI Assistant is temporarily unavailable. Please try again.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        suggestions: ['Try again', 'Check Mandi Prices', 'Book Slot']
+      };
+      setChatMessages((prev) => [...prev, errReply]);
+      return;
     }
 
     // Fallback if backend is warming up

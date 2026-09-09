@@ -1,128 +1,169 @@
 import React, { useState } from 'react';
 import { useAgriStore } from '../../context/AgriStoreContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { FarmerView } from '../../types';
+import { FarmerHomeScreen } from './FarmerHomeScreen';
+import { FarmerBottomNav } from './FarmerBottomNav';
+import { SimpleMandiBooking } from './govt/SimpleMandiBooking';
 import { CentreLocator } from './govt/CentreLocator';
-import { SmartSlotScheduler } from './govt/SmartSlotScheduler';
-import { MissedSlotWidget } from './govt/MissedSlotWidget';
-import { TruckDashboard } from './govt/TruckDashboard';
+import { WeatherDashboard } from './govt/WeatherDashboard';
 import { MSPPriceDashboard } from './govt/MSPPriceDashboard';
 import { QueueTokenWidget } from './govt/QueueTokenWidget';
 import { PaymentTracker } from './govt/PaymentTracker';
-import { WeatherDashboard } from './govt/WeatherDashboard';
+import { MissedSlotWidget } from './govt/MissedSlotWidget';
+import { TruckDashboard } from './govt/TruckDashboard';
+import { GovernmentSchemesView } from './govt/GovernmentSchemesView';
+import { FarmerHelpView } from './govt/FarmerHelpView';
 import { MyListingsGrid } from './market/MyListingsGrid';
 import { CreateListingModal } from './market/CreateListingModal';
 import { HarvestAdvisory } from './market/HarvestAdvisory';
 import {
-  Building2,
-  ShoppingBag,
-  ShieldCheck,
-  Sparkles,
-  MapPin,
+  Home,
+  ArrowLeft,
   Calendar,
-  CheckCircle2,
-  ArrowRight
+  MapPin,
+  CloudSun,
+  TrendingUp,
+  ClipboardList,
+  Landmark,
+  HelpCircle,
+  ShoppingBag
 } from 'lucide-react';
 
 export const FarmerDashboard: React.FC = () => {
-  const { farmerTab, setFarmerTab, currentUser } = useAgriStore();
+  const { currentUser } = useAgriStore();
   const { t } = useLanguage();
+  const [view, setView] = useState<FarmerView>('home');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-white via-teal-50/30 to-white p-5 rounded-2xl border border-gray-200 shadow-soft flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl gradient-agri flex items-center justify-center text-[#212121] font-extrabold text-lg shadow-md shadow-[#0D7377]/15">
-            {currentUser.name.slice(0, 1)}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg sm:text-xl font-extrabold text-[#212121]">
-                {t('namaste_greeting')}, {currentUser.name}
-              </h2>
-              <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                {t('aadhaar_verified_badge')}
-              </span>
-            </div>
-            <p className="text-xs text-gray-500 mt-0.5">
-              {t('village_label')}: {currentUser.village} • {t('aadhaar_label')}: {currentUser.aadhaar} • {t('registered_mandi_label')}: Warangal Enumamula
-            </p>
-          </div>
-        </div>
+    <div className="min-h-screen pb-20 sm:pb-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+        {/* Desktop View Navigation Bar */}
+        {view !== 'home' && (
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <button
+              onClick={() => setView('home')}
+              className="px-4 py-2 rounded-2xl bg-white border border-gray-200 hover:border-emerald-600 text-gray-800 text-xs sm:text-sm font-bold shadow-2xs flex items-center gap-1.5 transition-colors touch-target"
+            >
+              <ArrowLeft className="w-4 h-4 text-emerald-700" />
+              <span>← Back to Home</span>
+            </button>
 
-        {/* Interface Switcher */}
-        <div className="flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200">
-          <button
-            onClick={() => setFarmerTab('govt')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              farmerTab === 'govt'
-                ? 'bg-[#0D7377] text-white shadow-xs'
-                : 'text-gray-600 hover:text-[#212121]'
-            }`}
-          >
-            <Building2 className="w-3.5 h-3.5" />
-            <span>{t('govt_procurement')}</span>
-          </button>
-          <button
-            onClick={() => setFarmerTab('market')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              farmerTab === 'market'
-                ? 'bg-[#0D7377] text-white shadow-xs'
-                : 'text-gray-600 hover:text-[#212121]'
-            }`}
-          >
-            <ShoppingBag className="w-3.5 h-3.5" />
-            <span>{t('open_market')}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Render Govt Procurement View */}
-      {farmerTab === 'govt' ? (
-        <div className="space-y-6 animate-in fade-in duration-200">
-          {/* Missed Slot Grace Timer */}
-          <MissedSlotWidget />
-
-          {/* Top Row: Centre Locator + Live Queue Counter */}
-          <div className="grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <CentreLocator />
-            </div>
-            <div>
-              <QueueTokenWidget />
+            {/* Quick View Switcher on Desktop */}
+            <div className="hidden sm:flex items-center gap-1 bg-white p-1 rounded-2xl border border-gray-200 text-xs">
+              <button
+                onClick={() => setView('mandi')}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-colors ${
+                  view === 'mandi' ? 'bg-emerald-700 text-white' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                🌾 Mandi
+              </button>
+              <button
+                onClick={() => setView('nearby')}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-colors ${
+                  view === 'nearby' ? 'bg-emerald-700 text-white' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                📍 Nearby
+              </button>
+              <button
+                onClick={() => setView('weather')}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-colors ${
+                  view === 'weather' ? 'bg-emerald-700 text-white' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                🌦 Weather
+              </button>
+              <button
+                onClick={() => setView('prices')}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-colors ${
+                  view === 'prices' ? 'bg-emerald-700 text-white' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                💰 Prices
+              </button>
+              <button
+                onClick={() => setView('bookings')}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-colors ${
+                  view === 'bookings' ? 'bg-emerald-700 text-white' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                📋 Bookings
+              </button>
             </div>
           </div>
+        )}
 
-          {/* Smart Slot Timetable */}
-          <SmartSlotScheduler />
+        {/* ─────────────────────────────────────────────────────────────
+            ACTIVE VIEW RENDERING
+        ───────────────────────────────────────────────────────────── */}
+        {view === 'home' && (
+          <FarmerHomeScreen onNavigate={setView} />
+        )}
 
-          {/* Middle Row: Truck Flow + Weather Dashboard */}
-          <div className="grid lg:grid-cols-2 gap-6">
-            <TruckDashboard />
+        {view === 'mandi' && (
+          <div className="space-y-6">
+            <SimpleMandiBooking onDone={() => setView('bookings')} />
+            <MissedSlotWidget />
+          </div>
+        )}
+
+        {view === 'nearby' && (
+          <div className="space-y-6">
+            <CentreLocator />
+          </div>
+        )}
+
+        {view === 'weather' && (
+          <div className="space-y-6">
             <WeatherDashboard />
           </div>
+        )}
 
-          {/* Procurement & Payment Stepper */}
-          <PaymentTracker />
+        {view === 'prices' && (
+          <div className="space-y-6">
+            <MSPPriceDashboard />
+          </div>
+        )}
 
-          {/* MSP Prices & Agmarknet Comparison */}
-          <MSPPriceDashboard />
-        </div>
-      ) : (
-        /* Render Open Market View */
-        <div className="space-y-6 animate-in fade-in duration-200">
-          <HarvestAdvisory />
-          <MyListingsGrid onOpenCreateModal={() => setIsCreateModalOpen(true)} />
-          <WeatherDashboard />
+        {view === 'bookings' && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            <div className="grid lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <PaymentTracker />
+              </div>
+              <div>
+                <QueueTokenWidget />
+              </div>
+            </div>
+            <TruckDashboard />
+          </div>
+        )}
 
-          <CreateListingModal
-            isOpen={isCreateModalOpen}
-            onClose={() => setIsCreateModalOpen(false)}
-          />
-        </div>
-      )}
+        {view === 'schemes' && (
+          <GovernmentSchemesView onBack={() => setView('home')} />
+        )}
+
+        {view === 'help' && (
+          <FarmerHelpView onBack={() => setView('home')} />
+        )}
+
+        {view === 'market' && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            <HarvestAdvisory />
+            <MyListingsGrid onOpenCreateModal={() => setIsCreateModalOpen(true)} />
+            <CreateListingModal
+              isOpen={isCreateModalOpen}
+              onClose={() => setIsCreateModalOpen(false)}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Fixed Bottom Navigation (Mobile) */}
+      <FarmerBottomNav activeView={view} onNavigate={setView} />
     </div>
   );
 };

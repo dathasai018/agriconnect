@@ -2,6 +2,8 @@ export type UserRole = 'farmer' | 'customer' | 'admin';
 
 export type FarmerInterfaceTab = 'govt' | 'market';
 
+export type FarmerView = 'home' | 'mandi' | 'nearby' | 'weather' | 'prices' | 'ai' | 'bookings' | 'schemes' | 'help' | 'market';
+
 export interface ProcurementCentre {
   id: string;
   name: string;

@@ -3,17 +3,15 @@ import { useAgriStore } from '../../../context/AgriStoreContext';
 import { useLanguage } from '../../../context/LanguageContext';
 import {
   MapPin,
-  Truck,
-  Users,
-  Clock,
+  Phone,
   Navigation,
-  List,
-  Map as MapIcon,
-  CheckCircle2,
-  ChevronRight,
-  Sparkles,
+  Crosshair,
   Search,
-  Crosshair
+  Clock,
+  ExternalLink,
+  ShieldCheck,
+  Building2,
+  AlertCircle
 } from 'lucide-react';
 
 export const CentreLocator: React.FC = () => {
@@ -21,256 +19,167 @@ export const CentreLocator: React.FC = () => {
     centres,
     selectedCentreId,
     setSelectedCentreId,
-    addToast,
     userCoords,
     isLocating,
     locationError,
     detectUserLocation
   } = useAgriStore();
   const { t } = useLanguage();
-  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredCentres = centres.filter((c) =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.district.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.state.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.currentCrop.toLowerCase().includes(searchQuery.toLowerCase())
+    c.state.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const selectedCentre = centres.find((c) => c.id === selectedCentreId) || filteredCentres[0] || centres[0];
-
-  const handleSelectCentre = (id: string, name: string) => {
-    setSelectedCentreId(id);
-    addToast('info', t('nearby_centres_title'), `${t('switch_to_centre')}: ${name}`);
-  };
-
   return (
-    <div className="bg-white rounded-2xl border border-gray-200/90 shadow-soft overflow-hidden">
-      {/* Card Header */}
-      <div className="p-4 sm:p-5 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-white via-teal-50/10 to-white">
+    <div className="bg-white rounded-3xl border border-gray-200 p-5 sm:p-7 shadow-sm space-y-6">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
         <div>
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg gradient-agri flex items-center justify-center text-[#212121]">
-              <MapPin className="w-4 h-4 text-[#212121]" />
-            </div>
-            <h3 className="text-base font-bold text-[#212121]">
-              {t('nearby_centres_title')}
-            </h3>
-          </div>
-          <p className="text-xs text-gray-500 mt-0.5">
-            {userCoords ? 'Real-time GPS proximity calculated' : t('nearby_centres_sub')}
+          <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+            <span>📍</span> Nearby Agricultural Centers
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+            Verified APMC market yards and government procurement terminals.
           </p>
         </div>
 
-        {/* View Mode Toggle */}
-        <div className="flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200 text-xs">
-          <button
-            onClick={() => setViewMode('map')}
-            className={`px-3 py-1 rounded-lg font-semibold flex items-center gap-1.5 transition-all ${
-              viewMode === 'map' ? 'bg-white text-[#0D7377] shadow-xs' : 'text-gray-500'
-            }`}
-          >
-            <MapIcon className="w-3.5 h-3.5" />
-            <span>{t('interactive_map')}</span>
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            className={`px-3 py-1 rounded-lg font-semibold flex items-center gap-1.5 transition-all ${
-              viewMode === 'list' ? 'bg-white text-[#0D7377] shadow-xs' : 'text-gray-500'
-            }`}
-          >
-            <List className="w-3.5 h-3.5" />
-            <span>{t('centre_list')} ({filteredCentres.length})</span>
-          </button>
-        </div>
+        {/* Use My Location Button */}
+        <button
+          onClick={detectUserLocation}
+          disabled={isLocating}
+          className="px-5 py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-sm flex items-center gap-2 transition-all self-start sm:self-auto disabled:opacity-60 touch-target"
+        >
+          <Crosshair className={`w-4 h-4 ${isLocating ? 'animate-spin' : ''}`} />
+          <span>{isLocating ? 'Detecting GPS...' : t('use_my_location')}</span>
+        </button>
       </div>
 
-      {/* Content Area */}
-      <div className="p-4 sm:p-5">
-        {/* Live GPS Bar & Search */}
-        <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-teal-50/70 border border-teal-100 rounded-xl mb-4">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              onClick={detectUserLocation}
-              disabled={isLocating}
-              className="px-3 py-2 bg-[#0D7377] hover:bg-[#095457] text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-2 transition-all disabled:opacity-60"
-            >
-              <Crosshair className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin' : ''}`} />
-              {isLocating ? 'Detecting GPS...' : '📍 Use Live GPS Location'}
-            </button>
-            {userCoords ? (
-              <div className="flex items-center gap-2 text-xs text-teal-900 bg-white/90 px-3 py-1.5 rounded-lg border border-teal-200 shadow-xs">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="font-bold">Live GPS:</span>
-                <span>{userCoords.lat.toFixed(3)}°N, {userCoords.lng.toFixed(3)}°E</span>
-                <span className="text-[10px] text-teal-700 bg-teal-100 px-1.5 py-0.5 rounded font-semibold">Real Distances</span>
-              </div>
-            ) : (
-              <span className="text-xs text-gray-500">
-                Click to detect your exact GPS coordinates and sort mandis by real distance
-              </span>
-            )}
-          </div>
-
-          <div className="relative flex-1 min-w-[200px] max-w-xs">
-            <input
-              type="text"
-              placeholder="Search mandi, district, or state..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-white rounded-lg border border-gray-200 focus:border-[#0D7377] focus:ring-1 focus:ring-[#0D7377] outline-none"
-            />
-            <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-          </div>
-        </div>
-        {viewMode === 'map' ? (
-          <div className="space-y-4">
-            {/* Stylized Interactive Map Canvas */}
-            <div className="relative h-64 sm:h-72 w-full bg-slate-50 border border-gray-200 rounded-xl overflow-hidden shadow-inner">
-              {/* Grid Background Pattern */}
-              <div
-                className="absolute inset-0 opacity-40"
-                style={{
-                  backgroundImage: 'radial-gradient(#0D7377 0.75px, transparent 0.75px)',
-                  backgroundSize: '16px 16px'
-                }}
-              />
-
-              {/* Road / Route Visual Lines */}
-              <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-30">
-                <path d="M 50 150 Q 180 80 280 120 T 500 180" fill="none" stroke="#0D7377" strokeWidth="2.5" strokeDasharray="6 4" />
-                <path d="M 120 40 Q 220 180 340 140 T 600 90" fill="none" stroke="#14FFEC" strokeWidth="2" strokeDasharray="4 4" />
-              </svg>
-
-              {/* Mandi Pins on Map */}
-              {filteredCentres.map((c) => {
-                const isSelected = c.id === selectedCentreId;
-                return (
-                  <div
-                    key={c.id}
-                    onClick={() => handleSelectCentre(c.id, c.name)}
-                    style={{ left: `${c.coordinates.x}%`, top: `${c.coordinates.y}%` }}
-                    className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group z-20"
-                  >
-                    <div className="relative flex items-center justify-center">
-                      {isSelected && (
-                        <div className="absolute w-8 h-8 rounded-full bg-[#14FFEC]/40 pulse-beacon" />
-                      )}
-                      <div
-                        className={`w-7 h-7 rounded-full flex items-center justify-center shadow-md border-2 transition-transform duration-200 group-hover:scale-110 ${
-                          isSelected
-                            ? 'bg-[#0D7377] border-white text-[#14FFEC]'
-                            : 'bg-white border-[#0D7377] text-[#0D7377]'
-                        }`}
-                      >
-                        <MapPin className="w-4 h-4" />
-                      </div>
-                      <div className="absolute top-8 whitespace-nowrap bg-white/95 backdrop-blur-xs px-2 py-0.5 rounded shadow text-[10px] font-bold border border-gray-200 text-[#212121]">
-                        {c.name.split(' ')[0]} ({c.distanceKm}k)
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Selected Centre Snapshot Strip */}
-            <div className="p-3.5 bg-gray-50/80 border border-gray-200 rounded-xl flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-[#0D7377] text-white flex items-center justify-center font-bold text-xs">
-                  {selectedCentre.distanceKm}k
-                </div>
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <h4 className="text-xs sm:text-sm font-bold text-[#212121]">
-                      {selectedCentre.name}
-                    </h4>
-                    <span className="text-[10px] bg-teal-100 text-[#0D7377] font-bold px-2 py-0.5 rounded-full">
-                      {t('currently_selected')}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-gray-600 mt-0.5">
-                    {selectedCentre.district}, {selectedCentre.state} • {selectedCentre.distanceKm} {t('distance_km')} • {t('hours_label')}: {selectedCentre.operatingHours}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 text-xs">
-                <div className="text-center">
-                  <p className="text-gray-400 text-[10px]">{t('trucks_label')}</p>
-                  <p className="font-bold text-[#0D7377] text-sm">{selectedCentre.liveTruckCount}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-gray-400 text-[10px]">{t('queue_label')}</p>
-                  <p className="font-bold text-[#212121] text-sm">{selectedCentre.queueLength}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-gray-400 text-[10px]">{t('est_turnaround')}</p>
-                  <p className="font-bold text-emerald-700 text-sm">{selectedCentre.avgWaitMinutes}m</p>
-                </div>
-              </div>
-            </div>
+      {/* GPS Status / Search Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        {userCoords ? (
+          <div className="flex items-center gap-2 text-xs text-emerald-900 bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-200">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 pulse-soft" />
+            <span className="font-bold">Live GPS Active:</span>
+            <span>{userCoords.lat.toFixed(3)}°N, {userCoords.lng.toFixed(3)}°E</span>
+            <span className="text-[10px] bg-white px-2 py-0.5 rounded text-emerald-800 font-semibold border border-emerald-200">
+              Real Distances Verified
+            </span>
           </div>
         ) : (
-          /* List View */
-          <div className="space-y-2.5">
-            {filteredCentres.map((centre) => {
-              const isSelected = centre.id === selectedCentreId;
-              return (
-                <div
-                  key={centre.id}
-                  onClick={() => handleSelectCentre(centre.id, centre.name)}
-                  className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-wrap items-center justify-between gap-3 ${
-                    isSelected
-                      ? 'border-[#0D7377] bg-teal-50/40 shadow-xs'
-                      : 'border-gray-200 hover:border-gray-300 bg-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${
-                        isSelected ? 'bg-[#0D7377] text-white' : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
-                      {centre.distanceKm}k
+          <p className="text-xs text-gray-500">
+            Click "Use My Location" to calculate real road distance to nearby mandis.
+          </p>
+        )}
+
+        <div className="relative min-w-[240px]">
+          <input
+            type="text"
+            placeholder="Search mandi or district..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 text-xs bg-gray-50 rounded-xl border border-gray-200 focus:border-emerald-600 focus:bg-white focus:ring-1 focus:ring-emerald-600 outline-none transition-colors"
+          />
+          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        </div>
+      </div>
+
+      {/* Centers List */}
+      {filteredCentres.length === 0 ? (
+        <div className="text-center py-12 px-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-2">
+          <AlertCircle className="w-8 h-8 text-gray-400 mx-auto" />
+          <p className="font-bold text-gray-700 text-sm">
+            {t('no_centers_verified')}
+          </p>
+          <p className="text-xs text-gray-400">
+            Try adjusting your search query or enabling device GPS.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredCentres.map((centre) => {
+            const isSelected = centre.id === selectedCentreId;
+            const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${centre.latitude || 17.9689},${centre.longitude || 79.5941}`;
+
+            return (
+              <div
+                key={centre.id}
+                className={`p-5 rounded-3xl border-2 transition-all space-y-4 ${
+                  isSelected
+                    ? 'border-emerald-600 bg-emerald-50/20 shadow-sm ring-1 ring-emerald-600'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+                }`}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-base sm:text-lg font-bold text-gray-900">
+                        {centre.name}
+                      </h3>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                        {centre.mandiCode}
+                      </span>
                     </div>
-                    <div>
-                      <h4 className="font-bold text-xs sm:text-sm text-[#212121]">{centre.name}</h4>
-                      <p className="text-[11px] text-gray-500">
-                        {centre.district}, {centre.state} • {t('crops_label')}: {centre.currentCrop}
-                      </p>
-                    </div>
+
+                    <p className="text-xs text-gray-600 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <span>{centre.district}, {centre.state}</span>
+                    </p>
+
+                    <p className="text-xs text-emerald-800 font-medium flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                      <span>Operating: {centre.operatingHours}</span>
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-600 ml-1" />
+                      <span className="text-[11px] text-emerald-700 font-semibold">Open</span>
+                    </p>
                   </div>
 
-                  <div className="flex items-center gap-3 text-xs">
-                    <span className="flex items-center gap-1 text-gray-600">
-                      <Truck className="w-3.5 h-3.5 text-[#0D7377]" />
-                      <strong>{centre.liveTruckCount}</strong> {t('trucks_label')}
+                  {/* Distance Pill */}
+                  <div className="self-start sm:self-auto sm:text-right shrink-0">
+                    <span className="inline-block px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-900 font-extrabold text-xs sm:text-sm">
+                      📍 {centre.distanceKm} km away
                     </span>
-                    <span className="flex items-center gap-1 text-gray-600">
-                      <Users className="w-3.5 h-3.5 text-[#0D7377]" />
-                      <strong>{centre.queueLength}</strong> {t('waiting')}
-                    </span>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        centre.congestionStatus === 'low'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : centre.congestionStatus === 'medium'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-rose-100 text-rose-800'
-                      }`}
-                    >
-                      {centre.avgWaitMinutes}m Wait
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      {centre.liveTruckCount} trucks on site
+                    </p>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+
+                {/* Bottom Actions: Call & Directions */}
+                <div className="pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
+                  <span className="text-xs text-gray-500 font-medium">
+                    Allowed Produce: <strong>{centre.currentCrop}</strong>
+                  </span>
+
+                  <div className="flex items-center gap-2">
+                    {/* Call Button */}
+                    <a
+                      href={`tel:${centre.contactPhone}`}
+                      className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold transition-colors flex items-center gap-1.5 touch-target"
+                    >
+                      <Phone className="w-3.5 h-3.5 text-emerald-700" />
+                      <span>📞 Call</span>
+                    </a>
+
+                    {/* Directions Button */}
+                    <a
+                      href={googleMapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-2xs touch-target"
+                    >
+                      <Navigation className="w-3.5 h-3.5" />
+                      <span>🧭 Directions</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

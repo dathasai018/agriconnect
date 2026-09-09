@@ -164,8 +164,6 @@ app.post('/api/auth/send-otp', async (req, res) => {
   res.json({
     success: true,
     message: smsSent ? `OTP sent via SMS to +91 ${cleanPhone}` : `OTP sent to +91 ${cleanPhone}`,
-    devOtp: otp,
-    smsDispatched: smsSent,
     phone: cleanPhone
   });
 });
@@ -619,7 +617,7 @@ app.post('/api/ai/chat', async (req, res) => {
       };
       const targetLang = langNames[lang] || 'English';
 
-      const geminiEndpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+      const candidateModels = ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.8-flash'];
 
       const systemInstruction = `You are AgriConnect AI, an intelligent agricultural assistant and APMC Mandi advisor for Indian farmers, millers, and agricultural market committees.
 Target Language: ${targetLang}.
@@ -633,33 +631,60 @@ Provide comprehensive, practical, and highly accurate answers on:
 - Government welfare schemes like PM-KISAN, PMFBY (crop insurance), and Soil Health Cards.
 Keep answers concise (under 160 words), well-formatted with bullet points, and highly encouraging to farmers.`;
 
-      const gRes = await fetch(geminiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': geminiKey
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                { text: `${systemInstruction}\n\nFarmer Query: "${message}"` }
-              ]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2048
-          }
-        })
-      });
+      let lastError = null;
+      let successfulData = null;
+      let usedModel = null;
 
-      if (gRes.ok) {
-        const gData = await gRes.json();
-        const candidate = gData?.candidates?.[0];
+      for (const modelId of candidateModels) {
+        try {
+          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`;
+          const gRes = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': geminiKey
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: 'user',
+                  parts: [
+                    { text: `${systemInstruction}\n\nFarmer Query: "${message}"` }
+                  ]
+                }
+              ],
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 2048
+              }
+            })
+          });
+
+          if (gRes.ok) {
+            successfulData = await gRes.json();
+            usedModel = modelId;
+            break;
+          } else {
+            const errDetails = await gRes.text();
+            lastError = `Model ${modelId} returned ${gRes.status}: ${errDetails}`;
+            console.error(`[Gemini API Attempt Failed - ${modelId}]`, gRes.status, errDetails);
+            // If model is not found/deprecated, continue to next candidate model
+            if (gRes.status === 404 || errDetails.includes('not found') || errDetails.includes('no longer available')) {
+              continue;
+            } else {
+              break; // Other errors like invalid key or quota shouldn't rotate models pointlessly
+            }
+          }
+        } catch (fetchErr) {
+          lastError = fetchErr.message;
+          console.error(`[Gemini API Network Error - ${modelId}]`, fetchErr.message);
+        }
+      }
+
+      if (successfulData) {
+        const candidate = successfulData?.candidates?.[0];
         const parts = candidate?.content?.parts || [];
-        // Filter out thinking tokens if Gemini 2.5 returns thought parts
+        // Filter out thinking tokens if model returns thought parts
         const answerParts = parts.filter(p => !p.thought && p.text).map(p => p.text);
         let aiText = answerParts.join('\n\n').trim();
         if (!aiText) {
@@ -670,7 +695,7 @@ Keep answers concise (under 160 words), well-formatted with bullet points, and h
           let richCardType = null;
           let richData = null;
 
-          if (lower.includes('slot') || lower.includes('book') || lower.includes('स्लॉट') || lower.includes('బుక')) {
+          if (lower.includes('slot') || lower.includes('book') || lower.includes('స్లॉट') || lower.includes('బుక')) {
             richCardType = 'slot';
             richData = { centreName: 'Warangal APMC Yard', time: 'Tomorrow, 07:00 AM', waitEst: '18 mins', bay: 'Bay #1' };
           } else if (lower.includes('msp') || lower.includes('price') || lower.includes('rate') || lower.includes('ధర') || lower.includes('मूल्य')) {
@@ -681,7 +706,7 @@ Keep answers concise (under 160 words), well-formatted with bullet points, and h
           return res.json({
             text: aiText,
             source: 'gemini-api',
-            model: 'gemini-2.5-flash',
+            model: usedModel,
             richCardType,
             richData,
             suggestions: [
@@ -690,35 +715,19 @@ Keep answers concise (under 160 words), well-formatted with bullet points, and h
               lang === 'te' ? 'మార్కెట్ ధరలు చూడండి' : lang === 'hi' ? 'बाज़ार भाव देखें' : 'View Market Prices'
             ]
           });
-        } else {
-          console.warn('[Gemini API] Empty text in candidate parts:', JSON.stringify(gData));
-          return res.status(502).json({
-            error: 'Gemini AI returned an empty response. Please rephrase your agricultural question.',
-            source: 'gemini-empty-response'
-          });
         }
-      } else {
-        const errDetails = await gRes.text();
-        console.error('[Gemini API Error Response]', gRes.status, errDetails);
-        let errorMsg = `Google Gemini API returned error (${gRes.status})`;
-        try {
-          const parsed = JSON.parse(errDetails);
-          if (parsed.error?.message) {
-            errorMsg = parsed.error.message;
-          }
-        } catch (_) {
-          if (errDetails) errorMsg += `: ${errDetails.slice(0, 100)}`;
-        }
-        return res.status(gRes.status >= 400 && gRes.status < 500 ? gRes.status : 502).json({
-          error: errorMsg,
-          source: 'gemini-api-error',
-          status: gRes.status
-        });
       }
+
+      // If we reach here, Gemini request failed
+      console.error('[Gemini API Final Failure]', lastError);
+      return res.status(503).json({
+        error: 'AI Assistant is temporarily unavailable. Please try again.',
+        source: 'gemini-api-error'
+      });
     } catch (err) {
-      console.error('[Gemini API Fetch Error]', err.message);
-      return res.status(500).json({
-        error: `Failed to connect to Google Gemini service: ${err.message}`,
+      console.error('[Gemini Handler Exception]', err.message);
+      return res.status(503).json({
+        error: 'AI Assistant is temporarily unavailable. Please try again.',
         source: 'gemini-fetch-exception'
       });
     }
