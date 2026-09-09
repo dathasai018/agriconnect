@@ -5,7 +5,7 @@ import { UserRole } from '../types';
 import { api, setAuthToken, setStoredUser } from '../api/client';
 import {
   X, Phone, ShieldCheck, Smartphone, Loader2, ChevronRight,
-  Leaf, Users, Building2, KeyRound, Info
+  Leaf, Users, Building2, KeyRound, Info, User, MessageSquare
 } from 'lucide-react';
 
 const ROLE_CONFIG: Record<UserRole, {
@@ -24,16 +24,22 @@ export const AuthModal: React.FC = () => {
   const { t } = useLanguage();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedRole, setSelectedRole] = useState<UserRole>(authPreselectedRole || 'farmer');
+  const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [aadhaarNumber, setAadhaarNumber] = useState('');
   const [devOtp, setDevOtp] = useState<string | null>(null);
+  const [incomingSmsBanner, setIncomingSmsBanner] = useState<{ otp: string; phone: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!isAuthModalOpen) return null;
 
   const handleSendOtp = async () => {
+    if (!fullName.trim() || fullName.trim().length < 2) {
+      setError('Please enter your full name (कम से कम 2 अक्षर / కనీసం 2 అక్షరాలు)');
+      return;
+    }
     const cleanPhone = phone.replace(/\D/g, '');
     if (cleanPhone.length < 10) {
       setError('Please enter a valid 10-digit mobile number');
@@ -43,10 +49,13 @@ export const AuthModal: React.FC = () => {
     setError(null);
     try {
       const result = await api.sendOtp(cleanPhone);
-      if (result.devOtp) setDevOtp(result.devOtp);
+      const code = result.devOtp || '123456';
+      setDevOtp(code);
+      setIncomingSmsBanner({ otp: code, phone: cleanPhone });
       setStep(2);
     } catch (_) {
       setDevOtp('123456');
+      setIncomingSmsBanner({ otp: '123456', phone: cleanPhone });
       setStep(2);
     } finally {
       setLoading(false);
@@ -59,12 +68,14 @@ export const AuthModal: React.FC = () => {
     setError(null);
     const cleanPhone = phone.replace(/\D/g, '');
     try {
-      const result = await api.verifyOtp(cleanPhone, otp, selectedRole);
+      const result = await api.verifyOtp(cleanPhone, otp, selectedRole, fullName);
       setAuthToken(result.token);
       setStoredUser(result.user);
+      setIncomingSmsBanner(null);
       setStep(3); // Proceed to Aadhaar eKYC verification
     } catch (_) {
       if (otp === devOtp || otp === '123456') {
+        setIncomingSmsBanner(null);
         setStep(3); // Proceed to Aadhaar eKYC verification
       } else {
         setError('Invalid or expired OTP. Please verify and try again.');
@@ -85,13 +96,13 @@ export const AuthModal: React.FC = () => {
     try {
       await api.verifyAadhaar(cleanAadhaar);
       updateCurrentUserAadhaar(cleanAadhaar);
-      loginAs(selectedRole);
+      loginAs(selectedRole, fullName);
       setIsAssistantOpen(true); // Automatically trigger Gemini AI assistant
       handleClose();
     } catch (_) {
       // Mock fallback: approve verification
       updateCurrentUserAadhaar(cleanAadhaar);
-      loginAs(selectedRole);
+      loginAs(selectedRole, fullName);
       setIsAssistantOpen(true); // Automatically trigger Gemini AI assistant
       handleClose();
     } finally {
@@ -102,7 +113,7 @@ export const AuthModal: React.FC = () => {
   const handleClose = () => {
     closeAuthModal();
     setTimeout(() => {
-      setStep(1); setPhone(''); setOtp(''); setAadhaarNumber(''); setDevOtp(null); setError(null);
+      setStep(1); setFullName(''); setPhone(''); setOtp(''); setAadhaarNumber(''); setDevOtp(null); setIncomingSmsBanner(null); setError(null);
     }, 300);
   };
 
@@ -110,13 +121,46 @@ export const AuthModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={handleClose}>
-      <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-md" onClick={e => e.stopPropagation()}>
+      <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-md" onClick={e => e.stopPropagation()}>
+        {/* Floating Simulated Incoming SMS Alert Banner */}
+        {incomingSmsBanner && (
+          <div className="absolute -top-16 left-2 right-2 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="bg-slate-900/95 text-white rounded-2xl p-3 shadow-2xl border border-slate-700/80 flex items-center justify-between gap-2.5 backdrop-blur-md">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs flex-shrink-0">
+                  <MessageSquare className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5 text-[10px] text-gray-300 font-bold uppercase tracking-wider">
+                    <span className="text-emerald-400">Govt SMS</span>
+                    <span>•</span>
+                    <span className="text-gray-400">Just Now</span>
+                  </div>
+                  <p className="text-xs font-semibold text-white">
+                    AgriConnect OTP: <span className="font-mono font-bold tracking-widest text-emerald-300 bg-emerald-950/60 px-1 rounded">{incomingSmsBanner.otp}</span> for {incomingSmsBanner.phone}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setOtp(incomingSmsBanner.otp);
+                  setIncomingSmsBanner(null);
+                }}
+                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg transition-colors whitespace-nowrap shadow-xs"
+              >
+                Auto-Fill
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <div>
             <h2 className="text-lg font-extrabold text-[#212121]">Sign In to AgriConnect</h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              {step === 1 ? 'Select your role and enter mobile number' : step === 2 ? 'Enter the OTP sent to your phone' : 'UIDAI Aadhaar eKYC Verification'}
+              {step === 1 ? 'Enter your name, role, and mobile number' : step === 2 ? 'Enter the OTP sent to your phone' : 'UIDAI Aadhaar eKYC Verification'}
             </p>
           </div>
           <button onClick={handleClose} className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors">
@@ -132,7 +176,7 @@ export const AuthModal: React.FC = () => {
             ))}
           </div>
 
-          {/* Step 1: Role + Phone */}
+          {/* Step 1: Role + Name + Phone */}
           {step === 1 && (
             <div className="space-y-4">
               <div>
@@ -156,9 +200,26 @@ export const AuthModal: React.FC = () => {
                 <p className="text-[11px] text-gray-400 mt-1.5 text-center">{cfg.desc}</p>
               </div>
 
+              {/* Full Name Input */}
               <div>
-                <label className="text-xs font-semibold text-gray-600 mb-2 block">
-                  <Phone className="w-3.5 h-3.5 inline mr-1" />
+                <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+                  <User className="w-3.5 h-3.5 inline mr-1 text-[#0D7377]" />
+                  Full Name / पूरा नाम / పూర్తి పేరు
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Rameshwar Patel or Devender Reddy"
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-[#0D7377] focus:ring-2 focus:ring-[#0D7377]/10 outline-none text-sm transition-all"
+                  maxLength={50}
+                />
+              </div>
+
+              {/* Phone Number Input */}
+              <div>
+                <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+                  <Phone className="w-3.5 h-3.5 inline mr-1 text-[#0D7377]" />
                   {t('enter_phone')}
                 </label>
                 <div className="flex gap-2">
@@ -180,7 +241,7 @@ export const AuthModal: React.FC = () => {
                 className="w-full py-3 bg-[#0D7377] hover:bg-[#095457] text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-60 shadow-sm"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Smartphone className="w-4 h-4" />}
-                {loading ? 'Sending OTP...' : t('send_otp')}
+                {loading ? 'Sending OTP via SMS...' : t('send_otp')}
                 {!loading && <ChevronRight className="w-4 h-4" />}
               </button>
             </div>

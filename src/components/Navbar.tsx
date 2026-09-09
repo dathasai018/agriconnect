@@ -166,11 +166,11 @@ export const Navbar: React.FC = () => {
                 {currentUser.name.slice(0, 1)}
               </div>
               <div className="hidden lg:block text-left leading-tight">
-                <p className="text-xs font-bold text-[#212121] truncate max-w-[120px]">
-                  {activeRole === 'admin' ? t('admin_role') : activeRole === 'customer' ? t('customer_role') : currentUser.name}
+                <p className="text-xs font-bold text-[#212121] truncate max-w-[140px]">
+                  {currentUser.name}
                 </p>
-                <p className="text-[10px] text-[#323232]/70 font-medium">
-                  {activeRole === 'admin' ? 'Warangal APMC' : activeRole === 'customer' ? 'Bulk Trader' : 'Warangal Rural'}
+                <p className="text-[10px] text-[#323232]/70 font-medium capitalize">
+                  {activeRole === 'farmer' ? 'Kisan Member' : activeRole === 'admin' ? 'Centre Admin' : 'Buyer / Trader'}
                 </p>
               </div>
               <button

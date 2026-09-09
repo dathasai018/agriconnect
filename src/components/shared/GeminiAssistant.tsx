@@ -12,7 +12,10 @@ import {
   CalendarCheck,
   TrendingUp,
   Volume2,
-  VolumeX
+  VolumeX,
+  Key,
+  Check,
+  ExternalLink
 } from 'lucide-react';
 
 export const GeminiAssistant: React.FC = () => {
@@ -22,7 +25,10 @@ export const GeminiAssistant: React.FC = () => {
     chatMessages,
     isAiThinking,
     sendChatMessage,
-    bookSlot
+    bookSlot,
+    currentUser,
+    geminiApiKey,
+    setGeminiApiKey
   } = useAgriStore();
 
   const { language, t } = useLanguage();
@@ -30,6 +36,8 @@ export const GeminiAssistant: React.FC = () => {
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isSpeakingEnabled, setIsSpeakingEnabled] = useState(true);
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [keyInput, setKeyInput] = useState(geminiApiKey || '');
   const lastSpokenMessageIdRef = useRef<string | null>(null);
 
   // Text-to-Speech function for voice output
@@ -195,6 +203,23 @@ export const GeminiAssistant: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-1">
+              {/* Gemini API Key Settings Toggle */}
+              <button
+                onClick={() => {
+                  setShowKeyModal(!showKeyModal);
+                  setKeyInput(geminiApiKey || '');
+                }}
+                className={`p-1.5 rounded-lg transition-colors relative ${
+                  geminiApiKey ? 'text-[#14FFEC] bg-white/10' : 'text-amber-300 hover:text-white'
+                }`}
+                title={geminiApiKey ? 'Live Gemini API Connected' : 'Configure Google Gemini API Key'}
+              >
+                <Key className="w-4 h-4" />
+                {geminiApiKey && (
+                  <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-[#14FFEC] rounded-full" />
+                )}
+              </button>
+
               {/* Audio Voice-Out Toggle */}
               <button
                 onClick={() => {
@@ -223,8 +248,59 @@ export const GeminiAssistant: React.FC = () => {
             </div>
           </div>
 
+          {/* Gemini API Key Configuration Drawer */}
+          {showKeyModal && (
+            <div className="p-3 bg-slate-900 text-white text-xs border-b border-slate-800 space-y-2 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between">
+                <span className="font-bold flex items-center gap-1 text-[#14FFEC]">
+                  <Sparkles className="w-3.5 h-3.5" /> Google Gemini API Key
+                </span>
+                <a
+                  href="https://aistudio.google.com/app/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-teal-300 hover:underline flex items-center gap-0.5"
+                >
+                  Get free key <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              </div>
+              <p className="text-[11px] text-gray-300 leading-snug">
+                Enter your free Gemini key to ask any farming, soil, pest, or crop question live.
+              </p>
+              <div className="flex gap-1.5">
+                <input
+                  type="password"
+                  placeholder="AIzaSy..."
+                  value={keyInput}
+                  onChange={(e) => setKeyInput(e.target.value)}
+                  className="flex-1 px-2.5 py-1.5 bg-slate-800 rounded-lg text-white font-mono text-xs border border-slate-700 outline-none focus:border-[#14FFEC]"
+                />
+                <button
+                  onClick={() => {
+                    setGeminiApiKey(keyInput.trim() || null);
+                    setShowKeyModal(false);
+                  }}
+                  className="px-3 py-1.5 bg-[#0D7377] hover:bg-[#095457] text-[#14FFEC] font-bold rounded-lg flex items-center gap-1 text-xs"
+                >
+                  <Check className="w-3.5 h-3.5" /> Save
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Messages Feed */}
           <div className="flex-1 p-3.5 overflow-y-auto space-y-3 bg-[#FAFAFA]">
+            {/* Farmer Identification Banner */}
+            <div className="p-2.5 bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-100 rounded-xl text-[11px] flex items-center justify-between text-[#0D7377]">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span>Assisting: <strong>{currentUser.name}</strong></span>
+              </div>
+              <span className="text-[10px] bg-white px-2 py-0.5 rounded-full border border-teal-200 font-semibold">
+                {currentUser.aadhaarVerified ? 'Aadhaar eKYC ✓' : 'Kisan'}
+              </span>
+            </div>
+
             {chatMessages.map((msg) => (
               <div
                 key={msg.id}

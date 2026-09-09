@@ -25,11 +25,11 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 export const api = {
   // Auth
   sendOtp: (phone: string) =>
-    request<{ message: string; devOtp?: string }>('POST', '/auth/send-otp', { phone }),
-  verifyOtp: (phone: string, otp: string, role?: string) =>
-    request<{ token: string; user: Record<string, unknown> }>('POST', '/auth/verify-otp', { phone, otp, role }),
+    request<{ message: string; devOtp?: string; smsDispatched?: boolean; phone?: string }>('POST', '/auth/send-otp', { phone }),
+  verifyOtp: (phone: string, otp: string, role?: string, name?: string) =>
+    request<{ token: string; user: Record<string, unknown> }>('POST', '/auth/verify-otp', { phone, otp, role, name }),
   verifyAadhaar: (aadhaarNumber: string) =>
-    request<{ verified: boolean }>('POST', '/auth/verify-aadhaar', { aadhaarNumber }),
+    request<{ verified: boolean; aadhaar?: string; message?: string }>('POST', '/auth/verify-aadhaar', { aadhaarNumber }),
   getMe: () => request<Record<string, unknown>>('GET', '/auth/me'),
 
   // Centres

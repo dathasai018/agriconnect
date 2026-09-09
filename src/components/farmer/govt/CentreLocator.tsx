@@ -11,15 +11,34 @@ import {
   Map as MapIcon,
   CheckCircle2,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Search,
+  Crosshair
 } from 'lucide-react';
 
 export const CentreLocator: React.FC = () => {
-  const { centres, selectedCentreId, setSelectedCentreId, addToast } = useAgriStore();
+  const {
+    centres,
+    selectedCentreId,
+    setSelectedCentreId,
+    addToast,
+    userCoords,
+    isLocating,
+    locationError,
+    detectUserLocation
+  } = useAgriStore();
   const { t } = useLanguage();
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const selectedCentre = centres.find((c) => c.id === selectedCentreId) || centres[0];
+  const filteredCentres = centres.filter((c) =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.district.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.state.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.currentCrop.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const selectedCentre = centres.find((c) => c.id === selectedCentreId) || filteredCentres[0] || centres[0];
 
   const handleSelectCentre = (id: string, name: string) => {
     setSelectedCentreId(id);
@@ -40,7 +59,7 @@ export const CentreLocator: React.FC = () => {
             </h3>
           </div>
           <p className="text-xs text-gray-500 mt-0.5">
-            {t('nearby_centres_sub')}
+            {userCoords ? 'Real-time GPS proximity calculated' : t('nearby_centres_sub')}
           </p>
         </div>
 
@@ -62,13 +81,49 @@ export const CentreLocator: React.FC = () => {
             }`}
           >
             <List className="w-3.5 h-3.5" />
-            <span>{t('centre_list')}</span>
+            <span>{t('centre_list')} ({filteredCentres.length})</span>
           </button>
         </div>
       </div>
 
       {/* Content Area */}
       <div className="p-4 sm:p-5">
+        {/* Live GPS Bar & Search */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-teal-50/70 border border-teal-100 rounded-xl mb-4">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              onClick={detectUserLocation}
+              disabled={isLocating}
+              className="px-3 py-2 bg-[#0D7377] hover:bg-[#095457] text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-2 transition-all disabled:opacity-60"
+            >
+              <Crosshair className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin' : ''}`} />
+              {isLocating ? 'Detecting GPS...' : '📍 Use Live GPS Location'}
+            </button>
+            {userCoords ? (
+              <div className="flex items-center gap-2 text-xs text-teal-900 bg-white/90 px-3 py-1.5 rounded-lg border border-teal-200 shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="font-bold">Live GPS:</span>
+                <span>{userCoords.lat.toFixed(3)}°N, {userCoords.lng.toFixed(3)}°E</span>
+                <span className="text-[10px] text-teal-700 bg-teal-100 px-1.5 py-0.5 rounded font-semibold">Real Distances</span>
+              </div>
+            ) : (
+              <span className="text-xs text-gray-500">
+                Click to detect your exact GPS coordinates and sort mandis by real distance
+              </span>
+            )}
+          </div>
+
+          <div className="relative flex-1 min-w-[200px] max-w-xs">
+            <input
+              type="text"
+              placeholder="Search mandi, district, or state..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-white rounded-lg border border-gray-200 focus:border-[#0D7377] focus:ring-1 focus:ring-[#0D7377] outline-none"
+            />
+            <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          </div>
+        </div>
         {viewMode === 'map' ? (
           <div className="space-y-4">
             {/* Stylized Interactive Map Canvas */}
@@ -89,7 +144,7 @@ export const CentreLocator: React.FC = () => {
               </svg>
 
               {/* Mandi Pins on Map */}
-              {centres.map((c) => {
+              {filteredCentres.map((c) => {
                 const isSelected = c.id === selectedCentreId;
                 return (
                   <div
@@ -160,7 +215,7 @@ export const CentreLocator: React.FC = () => {
         ) : (
           /* List View */
           <div className="space-y-2.5">
-            {centres.map((centre) => {
+            {filteredCentres.map((centre) => {
               const isSelected = centre.id === selectedCentreId;
               return (
                 <div

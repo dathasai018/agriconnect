@@ -9,6 +9,8 @@ export interface ProcurementCentre {
   district: string;
   state: string;
   distanceKm: number;
+  latitude?: number;
+  longitude?: number;
   liveTruckCount: number;
   queueLength: number;
   currentCrop: string;

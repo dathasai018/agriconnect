@@ -21,6 +21,8 @@ const INITIAL_CENTRES: ProcurementCentre[] = [
     mandiCode: 'TS-WGL-01',
     district: 'Warangal',
     state: 'Telangana',
+    latitude: 17.9689,
+    longitude: 79.5941,
     distanceKm: 4.2,
     liveTruckCount: 28,
     queueLength: 14,
@@ -37,6 +39,8 @@ const INITIAL_CENTRES: ProcurementCentre[] = [
     mandiCode: 'TS-NZB-04',
     district: 'Nizamabad',
     state: 'Telangana',
+    latitude: 18.6725,
+    longitude: 78.0941,
     distanceKm: 18.5,
     liveTruckCount: 16,
     queueLength: 6,
@@ -53,6 +57,8 @@ const INITIAL_CENTRES: ProcurementCentre[] = [
     mandiCode: 'TS-KRN-02',
     district: 'Karimnagar',
     state: 'Telangana',
+    latitude: 18.4386,
+    longitude: 79.1288,
     distanceKm: 31.0,
     liveTruckCount: 42,
     queueLength: 22,
@@ -69,6 +75,8 @@ const INITIAL_CENTRES: ProcurementCentre[] = [
     mandiCode: 'TS-SRY-07',
     district: 'Suryapet',
     state: 'Telangana',
+    latitude: 17.1397,
+    longitude: 79.6223,
     distanceKm: 44.8,
     liveTruckCount: 12,
     queueLength: 4,
@@ -81,10 +89,12 @@ const INITIAL_CENTRES: ProcurementCentre[] = [
   },
   {
     id: 'centre-5',
-    name: 'Khanna Regional Wheat Terminal (Benchmark)',
+    name: 'Khanna Regional Wheat Terminal',
     mandiCode: 'PB-KHN-01',
     district: 'Ludhiana',
     state: 'Punjab',
+    latitude: 30.7046,
+    longitude: 76.2179,
     distanceKm: 120.0,
     liveTruckCount: 54,
     queueLength: 30,
@@ -94,6 +104,114 @@ const INITIAL_CENTRES: ProcurementCentre[] = [
     congestionStatus: 'high',
     avgWaitMinutes: 85,
     contactPhone: '+91 162 822 5500'
+  },
+  {
+    id: 'centre-6',
+    name: 'Hyderabad Malakpet Agriculture Market Yard',
+    mandiCode: 'TS-HYD-01',
+    district: 'Hyderabad',
+    state: 'Telangana',
+    latitude: 17.3753,
+    longitude: 78.5028,
+    distanceKm: 12.4,
+    liveTruckCount: 38,
+    queueLength: 10,
+    currentCrop: 'Paddy, Onion, Chilli',
+    operatingHours: '05:00 AM - 09:00 PM',
+    coordinates: { x: 42, y: 50 },
+    congestionStatus: 'medium',
+    avgWaitMinutes: 40,
+    contactPhone: '+91 40 2452 3311'
+  },
+  {
+    id: 'centre-7',
+    name: 'Guntur Mirchi & Cotton APMC Yard',
+    mandiCode: 'AP-GNT-01',
+    district: 'Guntur',
+    state: 'Andhra Pradesh',
+    latitude: 16.3067,
+    longitude: 80.4365,
+    distanceKm: 65.0,
+    liveTruckCount: 62,
+    queueLength: 25,
+    currentCrop: 'Red Chilli, Cotton, Paddy',
+    operatingHours: '06:00 AM - 07:30 PM',
+    coordinates: { x: 55, y: 70 },
+    congestionStatus: 'high',
+    avgWaitMinutes: 55,
+    contactPhone: '+91 863 223 4810'
+  },
+  {
+    id: 'centre-8',
+    name: 'Pune Gultekdi Market Yard (APMC)',
+    mandiCode: 'MH-PUN-01',
+    district: 'Pune',
+    state: 'Maharashtra',
+    latitude: 18.4908,
+    longitude: 73.8654,
+    distanceKm: 110.0,
+    liveTruckCount: 45,
+    queueLength: 15,
+    currentCrop: 'Soybean, Onion, Wheat',
+    operatingHours: '05:30 AM - 08:00 PM',
+    coordinates: { x: 20, y: 55 },
+    congestionStatus: 'low',
+    avgWaitMinutes: 30,
+    contactPhone: '+91 20 2426 1234'
+  },
+  {
+    id: 'centre-9',
+    name: 'Lasalgaon Onion Terminal APMC',
+    mandiCode: 'MH-NSK-02',
+    district: 'Nashik',
+    state: 'Maharashtra',
+    latitude: 20.1455,
+    longitude: 74.2289,
+    distanceKm: 140.0,
+    liveTruckCount: 78,
+    queueLength: 35,
+    currentCrop: 'Onion, Maize, Soybean',
+    operatingHours: '06:00 AM - 07:00 PM',
+    coordinates: { x: 22, y: 40 },
+    congestionStatus: 'high',
+    avgWaitMinutes: 60,
+    contactPhone: '+91 255 026 6224'
+  },
+  {
+    id: 'centre-10',
+    name: 'Bengaluru Yeshwantpur APMC Yard',
+    mandiCode: 'KA-BLR-01',
+    district: 'Bengaluru Urban',
+    state: 'Karnataka',
+    latitude: 13.0238,
+    longitude: 77.5505,
+    distanceKm: 180.0,
+    liveTruckCount: 35,
+    queueLength: 8,
+    currentCrop: 'Ragi, Maize, Pulses',
+    operatingHours: '06:00 AM - 08:00 PM',
+    coordinates: { x: 40, y: 85 },
+    congestionStatus: 'low',
+    avgWaitMinutes: 25,
+    contactPhone: '+91 80 2337 5500'
+  },
+  {
+    id: 'centre-11',
+    name: 'Azadpur APMC National Market',
+    mandiCode: 'DL-AZD-01',
+    district: 'North Delhi',
+    state: 'Delhi',
+    latitude: 28.7121,
+    longitude: 77.1755,
+    distanceKm: 250.0,
+    liveTruckCount: 95,
+    queueLength: 45,
+    currentCrop: 'Wheat, Basmati Rice, Mustard',
+    operatingHours: '04:00 AM - 10:00 PM',
+    coordinates: { x: 50, y: 15 },
+    congestionStatus: 'high',
+    avgWaitMinutes: 75,
+    contactPhone: '+91 11 2769 1818'
   }
 ];
 
@@ -702,7 +820,7 @@ interface AgriStoreContextType {
   authPreselectedRole: UserRole;
   openAuthModal: (role?: UserRole) => void;
   closeAuthModal: () => void;
-  loginAs: (role: UserRole) => void;
+  loginAs: (role: UserRole, customName?: string) => void;
   logout: () => void;
   currentUser: {
     name: string;
@@ -716,6 +834,12 @@ interface AgriStoreContextType {
   centres: ProcurementCentre[];
   selectedCentreId: string;
   setSelectedCentreId: (id: string) => void;
+  userCoords: { lat: number; lng: number } | null;
+  isLocating: boolean;
+  locationError: string | null;
+  detectUserLocation: () => Promise<void>;
+  geminiApiKey: string | null;
+  setGeminiApiKey: (key: string | null) => void;
   slots: MandiSlot[];
   myBookedSlot: MandiSlot | null;
   bookSlot: (slotId: string, crop: string) => Promise<boolean>;
@@ -808,8 +932,77 @@ export const AgriStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
   };
 
-  const [centres] = useState<ProcurementCentre[]>(INITIAL_CENTRES);
+  const [centres, setCentres] = useState<ProcurementCentre[]>(INITIAL_CENTRES);
   const [selectedCentreId, setSelectedCentreId] = useState<string>('centre-1');
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [geminiApiKey, setGeminiApiKeyState] = useState<string | null>(() => localStorage.getItem('agri_gemini_key') || null);
+
+  const setGeminiApiKey = (key: string | null) => {
+    setGeminiApiKeyState(key);
+    if (key) {
+      localStorage.setItem('agri_gemini_key', key);
+    } else {
+      localStorage.removeItem('agri_gemini_key');
+    }
+  };
+
+  const calculateDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
+  };
+
+  const detectUserLocation = async () => {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported by this browser');
+      addToast('alert', 'GPS Unavailable', 'Your browser does not support GPS geolocation.');
+      return;
+    }
+    setIsLocating(true);
+    setLocationError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserCoords(coords);
+        setIsLocating(false);
+
+        // Calculate real distance to each APMC mandi from user's live physical GPS
+        setCentres((prev) => {
+          const updated = prev.map((c) => {
+            const dist = (c.latitude && c.longitude)
+              ? calculateDistanceKm(coords.lat, coords.lng, c.latitude, c.longitude)
+              : c.distanceKm;
+            return { ...c, distanceKm: dist };
+          });
+          // Sort closest to furthest
+          updated.sort((a, b) => a.distanceKm - b.distanceKm);
+          if (updated.length > 0) {
+            setSelectedCentreId(updated[0].id);
+          }
+          return updated;
+        });
+
+        addToast(
+          'success',
+          'Live GPS Coordinates Detected',
+          `GPS Fix: ${coords.lat.toFixed(3)}°N, ${coords.lng.toFixed(3)}°E. Mandis sorted by real proximity!`
+        );
+      },
+      (err) => {
+        setIsLocating(false);
+        const errMsg = err.code === 1 ? 'Location permission was denied' : 'Unable to acquire satellite GPS fix';
+        setLocationError(errMsg);
+        addToast('warning', 'GPS Notice', `${errMsg}. Displaying regional market committees.`);
+      },
+      { timeout: 12000, enableHighAccuracy: true }
+    );
+  };
+
   const [slots, setSlots] = useState<MandiSlot[]>(INITIAL_SLOTS);
   const [myBookedSlot, setMyBookedSlot] = useState<MandiSlot | null>(INITIAL_SLOTS[1]);
   const [missedSlotSeconds, setMissedSlotSeconds] = useState<number>(60);
@@ -863,7 +1056,7 @@ export const AgriStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setIsAuthModalOpen(false);
   };
 
-  const loginAs = (role: UserRole) => {
+  const loginAs = (role: UserRole, customName?: string) => {
     setActiveRole(role);
     setIsAuthenticated(true);
     setIsAuthModalOpen(false);
@@ -871,21 +1064,31 @@ export const AgriStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     
     // Check if stored user was saved by auth client
     const saved = localStorage.getItem('agri_user');
+    let u: any = null;
     if (saved) {
       try {
-        const u = JSON.parse(saved);
-        setCurrentUser({
-          name: u.name || (role === 'farmer' ? 'Rameshwar Patel' : role === 'customer' ? 'FreshGrain Buyer' : 'Mandi Secretary'),
-          phone: u.phone ? `+91 ${u.phone}` : '+91 98480 23456',
-          aadhaar: u.aadhaar || 'XXXX XXXX 8742',
-          village: u.village || 'Warangal Rural',
-          selectedCentreId: u.centreId || 'centre-1',
-          aadhaarVerified: u.aadhaarVerified ?? true
-        });
+        u = JSON.parse(saved);
       } catch (_) {}
     }
+
+    const finalName = customName?.trim() || u?.name || (role === 'farmer' ? 'Rameshwar Patel' : role === 'customer' ? 'FreshGrain Buyer' : 'Mandi Secretary');
+
+    setCurrentUser({
+      name: finalName,
+      phone: u?.phone ? `+91 ${u.phone}` : '+91 98480 23456',
+      aadhaar: u?.aadhaar || 'XXXX XXXX 8742',
+      village: u?.village || 'Warangal Rural',
+      selectedCentreId: u?.centreId || 'centre-1',
+      aadhaarVerified: u?.aadhaarVerified ?? true
+    });
+
+    localStorage.setItem('agri_user', JSON.stringify({
+      ...(u || {}),
+      name: finalName,
+      role
+    }));
     
-    addToast('success', 'Signed In Successfully', `Welcome to AgriConnect as ${role.toUpperCase()}`);
+    addToast('success', 'Signed In Successfully', `Welcome to AgriConnect, ${finalName}!`);
   };
 
   const logout = () => {
@@ -1082,11 +1285,12 @@ export const AgriStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     try {
       const language = localStorage.getItem('agri_lang') || 'en';
+      const storedKey = geminiApiKey || localStorage.getItem('agri_gemini_key') || undefined;
       // Send message to real backend AI service
       const res = await fetch('https://agriconnect-api-q2bv.onrender.com/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, language })
+        body: JSON.stringify({ message: text, language, apiKey: storedKey })
       });
       if (res.ok) {
         const data = await res.json();
@@ -1215,6 +1419,12 @@ export const AgriStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         centres,
         selectedCentreId,
         setSelectedCentreId,
+        userCoords,
+        isLocating,
+        locationError,
+        detectUserLocation,
+        geminiApiKey,
+        setGeminiApiKey,
         slots,
         myBookedSlot,
         bookSlot,
