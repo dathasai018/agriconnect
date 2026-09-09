@@ -619,7 +619,7 @@ app.post('/api/ai/chat', async (req, res) => {
       };
       const targetLang = langNames[lang] || 'English';
 
-      const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
+      const geminiEndpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
       const systemInstruction = `You are AgriConnect AI, an intelligent agricultural assistant and APMC Mandi advisor for Indian farmers, millers, and agricultural market committees.
 Target Language: ${targetLang}.
@@ -631,11 +631,14 @@ Provide comprehensive, practical, and highly accurate answers on:
 - Minimum Support Price (MSP), APMC mandi slot booking, token queue times, and PFMS DBT payments
 - Direct farmer-to-buyer open marketplace pricing and quality grading
 - Government welfare schemes like PM-KISAN, PMFBY (crop insurance), and Soil Health Cards.
-Keep answers concise (under 120 words), well-formatted with bullet points, and highly encouraging to farmers.`;
+Keep answers concise (under 160 words), well-formatted with bullet points, and highly encouraging to farmers.`;
 
       const gRes = await fetch(geminiEndpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': geminiKey
+        },
         body: JSON.stringify({
           contents: [
             {
@@ -647,14 +650,22 @@ Keep answers concise (under 120 words), well-formatted with bullet points, and h
           ],
           generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 600
+            maxOutputTokens: 2048
           }
         })
       });
 
       if (gRes.ok) {
         const gData = await gRes.json();
-        const aiText = gData?.candidates?.[0]?.content?.parts?.[0]?.text;
+        const candidate = gData?.candidates?.[0];
+        const parts = candidate?.content?.parts || [];
+        // Filter out thinking tokens if Gemini 2.5 returns thought parts
+        const answerParts = parts.filter(p => !p.thought && p.text).map(p => p.text);
+        let aiText = answerParts.join('\n\n').trim();
+        if (!aiText) {
+          aiText = parts.map(p => p.text).filter(Boolean).join('\n\n').trim();
+        }
+
         if (aiText) {
           let richCardType = null;
           let richData = null;
@@ -670,6 +681,7 @@ Keep answers concise (under 120 words), well-formatted with bullet points, and h
           return res.json({
             text: aiText,
             source: 'gemini-api',
+            model: 'gemini-2.5-flash',
             richCardType,
             richData,
             suggestions: [
@@ -678,13 +690,37 @@ Keep answers concise (under 120 words), well-formatted with bullet points, and h
               lang === 'te' ? 'మార్కెట్ ధరలు చూడండి' : lang === 'hi' ? 'बाज़ार भाव देखें' : 'View Market Prices'
             ]
           });
+        } else {
+          console.warn('[Gemini API] Empty text in candidate parts:', JSON.stringify(gData));
+          return res.status(502).json({
+            error: 'Gemini AI returned an empty response. Please rephrase your agricultural question.',
+            source: 'gemini-empty-response'
+          });
         }
       } else {
         const errDetails = await gRes.text();
-        console.error('[Gemini API Call Failed]', errDetails);
+        console.error('[Gemini API Error Response]', gRes.status, errDetails);
+        let errorMsg = `Google Gemini API returned error (${gRes.status})`;
+        try {
+          const parsed = JSON.parse(errDetails);
+          if (parsed.error?.message) {
+            errorMsg = parsed.error.message;
+          }
+        } catch (_) {
+          if (errDetails) errorMsg += `: ${errDetails.slice(0, 100)}`;
+        }
+        return res.status(gRes.status >= 400 && gRes.status < 500 ? gRes.status : 502).json({
+          error: errorMsg,
+          source: 'gemini-api-error',
+          status: gRes.status
+        });
       }
     } catch (err) {
       console.error('[Gemini API Fetch Error]', err.message);
+      return res.status(500).json({
+        error: `Failed to connect to Google Gemini service: ${err.message}`,
+        source: 'gemini-fetch-exception'
+      });
     }
   }
 

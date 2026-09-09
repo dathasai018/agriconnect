@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { API_BASE } from '../api/client';
 import {
   UserRole,
   FarmerInterfaceTab,
@@ -1286,28 +1287,56 @@ export const AgriStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try {
       const language = localStorage.getItem('agri_lang') || 'en';
       const storedKey = geminiApiKey || localStorage.getItem('agri_gemini_key') || undefined;
-      // Send message to real backend AI service
-      const res = await fetch('https://agriconnect-api-q2bv.onrender.com/api/ai/chat', {
+      // Send message to real backend AI service (uses dynamic local/production URL)
+      const res = await fetch(`${API_BASE}/ai/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, language, apiKey: storedKey })
       });
-      if (res.ok) {
-        const data = await res.json();
-        setIsAiThinking(false);
-        const aiReply: ChatMessage = {
+      const data = await res.json();
+      setIsAiThinking(false);
+
+      // If an API key was set and server returned an error, show that error in chat
+      if (!res.ok || data.error) {
+        const errorText = data.error || `Server error (${res.status}). Please try again.`;
+        const errReply: ChatMessage = {
           id: 'msg-' + Date.now() + 1,
           sender: 'gemini',
-          text: data.text || 'I have analyzed your query and updated mandi records.',
+          text: `⚠️ ${errorText}`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          richCardType: data.richCardType,
-          richData: data.richData,
-          suggestions: data.richData?.suggestions || ['Book Tomorrow Slot', 'Check Weather Radar', 'View Open Market']
+          suggestions: ['Check your API key in Settings', 'Try again', 'View MSP Prices']
         };
-        setChatMessages((prev) => [...prev, aiReply]);
+        setChatMessages((prev) => [...prev, errReply]);
         return;
       }
-    } catch (_) {}
+
+      const aiReply: ChatMessage = {
+        id: 'msg-' + Date.now() + 1,
+        sender: 'gemini',
+        text: data.text || 'I have analyzed your query and updated mandi records.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        richCardType: data.richCardType,
+        richData: data.richData,
+        suggestions: data.suggestions || data.richData?.suggestions || ['Book Tomorrow Slot', 'Check Weather Radar', 'View Open Market']
+      };
+      setChatMessages((prev) => [...prev, aiReply]);
+      return;
+    } catch (networkErr) {
+      // Network error (backend unreachable) — only fall through to keyword fallback if no API key
+      const storedKey = geminiApiKey || localStorage.getItem('agri_gemini_key');
+      if (storedKey) {
+        setIsAiThinking(false);
+        const errReply: ChatMessage = {
+          id: 'msg-' + Date.now() + 1,
+          sender: 'gemini',
+          text: '⚠️ Unable to reach AgriConnect server. Please check your internet connection and try again.',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          suggestions: ['Try again', 'Check connection', 'View MSP Prices']
+        };
+        setChatMessages((prev) => [...prev, errReply]);
+        return;
+      }
+    }
 
     // Fallback if backend is warming up
     setTimeout(() => {

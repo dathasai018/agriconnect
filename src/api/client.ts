@@ -1,4 +1,6 @@
-const API_BASE = 'https://agriconnect-api-q2bv.onrender.com/api';
+export const API_BASE = (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
+  ? 'http://localhost:5000/api'
+  : 'https://agriconnect-api-q2bv.onrender.com/api';
 
 function getToken(): string | null {
   return localStorage.getItem('agri_token');
@@ -89,9 +91,9 @@ export const api = {
   getAdminKpi: () => request<Record<string, number>>('GET', '/admin/kpi'),
 
   // AI
-  chat: (message: string, language?: string) =>
-    request<{ text: string; richCardType?: string; richData?: unknown; ticketId?: string }>(
-      'POST', '/ai/chat', { message, language }
+  chat: (message: string, language?: string, apiKey?: string) =>
+    request<{ text?: string; richCardType?: string; richData?: unknown; ticketId?: string; source?: string; error?: string; suggestions?: string[] }>(
+      'POST', '/ai/chat', { message, language, apiKey }
     ),
 
   // Notifications
