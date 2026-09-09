@@ -14,15 +14,15 @@ import {
   AlertCircle
 } from 'lucide-react';
 
-export const MyListingsGrid: React.FC<{ onOpenCreateModal: () => void }> = ({
+export const MyListingsGrid: React.FC<{ onOpenCreateModal: (listing?: MarketListing) => void }> = ({
   onOpenCreateModal
 }) => {
-  const { marketListings, deleteListing, toggleListingStatus } = useAgriStore();
+  const { marketListings, deleteListing, toggleListingStatus, isLoadingListings } = useAgriStore();
   const { t } = useLanguage();
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Filter listings by current demo farmer (Rameshwar Patel)
-  const myListings = marketListings.filter((l) => l.farmerName.includes('Rameshwar'));
+  // Use listings directly from store (already filtered by backend API)
+  const myListings = marketListings;
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200/90 shadow-soft p-4 sm:p-5">
@@ -42,7 +42,7 @@ export const MyListingsGrid: React.FC<{ onOpenCreateModal: () => void }> = ({
         </div>
 
         <button
-          onClick={onOpenCreateModal}
+          onClick={() => onOpenCreateModal()}
           className="px-3.5 py-2 rounded-xl gradient-agri text-[#212121] font-bold text-xs shadow-md hover:opacity-95 transition-all flex items-center gap-1.5 glow-btn"
         >
           <Plus className="w-4 h-4" />
@@ -50,7 +50,12 @@ export const MyListingsGrid: React.FC<{ onOpenCreateModal: () => void }> = ({
         </button>
       </div>
 
-      {myListings.length === 0 ? (
+      {isLoadingListings ? (
+        <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+          <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mb-3"></div>
+          <p className="text-xs font-bold text-gray-500">Loading your listings...</p>
+        </div>
+      ) : myListings.length === 0 ? (
         <div className="p-8 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200">
           <ShoppingBag className="w-10 h-10 text-gray-300 mx-auto mb-2" />
           <p className="text-xs font-bold text-[#212121]">{t('no_listings_yet')}</p>
@@ -58,7 +63,7 @@ export const MyListingsGrid: React.FC<{ onOpenCreateModal: () => void }> = ({
             {t('no_listings_sub')}
           </p>
           <button
-            onClick={onOpenCreateModal}
+            onClick={() => onOpenCreateModal()}
             className="mt-3 px-3 py-1.5 bg-[#0D7377] text-white rounded-lg text-xs font-bold"
           >
             {t('post_new_produce')}
@@ -120,13 +125,23 @@ export const MyListingsGrid: React.FC<{ onOpenCreateModal: () => void }> = ({
                   >
                     {t('toggle_status_btn')}
                   </button>
-                  <button
-                    onClick={() => deleteListing(item.id)}
-                    className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                    title={t('delete_btn')}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => onOpenCreateModal(item)}
+                      className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                      title="Edit Listing"
+                    >
+                      <Plus className="w-4 h-4 transform rotate-45" /> {/* Use plus rotated or just text, let's use Tag or Edit if imported, but we'll use a simple edit text or icon */}
+                      <span className="text-xs font-medium">Edit</span>
+                    </button>
+                    <button
+                      onClick={() => deleteListing(item.id)}
+                      className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                      title={t('delete_btn')}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

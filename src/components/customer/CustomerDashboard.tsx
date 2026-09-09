@@ -16,13 +16,17 @@ import {
 } from 'lucide-react';
 
 export const CustomerDashboard: React.FC = () => {
-  const { marketListings } = useAgriStore();
+  const { marketListings, fetchAllListings, isLoadingListings } = useAgriStore();
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Produce');
   const [maxPrice, setMaxPrice] = useState(15000);
   const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc'>('newest');
   const [selectedListing, setSelectedListing] = useState<MarketListing | null>(null);
+
+  React.useEffect(() => {
+    fetchAllListings();
+  }, []);
 
   const categories = [
     { key: 'All Produce', label: t('all_produce') },

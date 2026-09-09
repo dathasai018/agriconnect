@@ -31,10 +31,17 @@ import {
 } from 'lucide-react';
 
 export const FarmerDashboard: React.FC = () => {
-  const { currentUser } = useAgriStore();
+  const { currentUser, fetchMyListings } = useAgriStore();
   const { t } = useLanguage();
   const [view, setView] = useState<FarmerView>('home');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [listingToEdit, setListingToEdit] = useState<any>(null);
+
+  React.useEffect(() => {
+    if (view === 'market') {
+      fetchMyListings();
+    }
+  }, [view]);
 
   return (
     <div className="min-h-screen pb-20 sm:pb-8">
@@ -153,10 +160,14 @@ export const FarmerDashboard: React.FC = () => {
         {view === 'market' && (
           <div className="space-y-6 animate-in fade-in duration-200">
             <HarvestAdvisory />
-            <MyListingsGrid onOpenCreateModal={() => setIsCreateModalOpen(true)} />
+            <MyListingsGrid onOpenCreateModal={(listing) => {
+              setListingToEdit(listing || null);
+              setIsCreateModalOpen(true);
+            }} />
             <CreateListingModal
               isOpen={isCreateModalOpen}
               onClose={() => setIsCreateModalOpen(false)}
+              listingToEdit={listingToEdit}
             />
           </div>
         )}

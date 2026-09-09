@@ -12,6 +12,8 @@ import {
   Tag
 } from 'lucide-react';
 
+import { api } from '../../../api/client';
+
 const PRESET_PHOTOS = [
   { label: 'Basmati Paddy', url: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=800&q=80' },
   { label: 'Golden Wheat', url: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&w=800&q=80' },
@@ -20,27 +22,75 @@ const PRESET_PHOTOS = [
   { label: 'Organic Turmeric', url: 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=800&q=80' }
 ];
 
-export const CreateListingModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
-  isOpen,
-  onClose
-}) => {
-  const { createListing, currentUser } = useAgriStore();
+import { MarketListing } from '../../../types';
 
-  const [crop, setCrop] = useState('Basmati Paddy (Pusa 1121)');
-  const [variety, setVariety] = useState('Aged 1-Year Extra Long Grain');
-  const [quantity, setQuantity] = useState(80);
-  const [price, setPrice] = useState(3800);
-  const [minOrder, setMinOrder] = useState(10);
-  const [isOrganic, setIsOrganic] = useState(true);
-  const [grade, setGrade] = useState<'Grade A' | 'Grade B' | 'Fair Average Quality'>('Grade A');
-  const [imageUrl, setImageUrl] = useState(PRESET_PHOTOS[0].url);
-  const [description, setDescription] = useState('Clean sun-dried grain harvested directly from farm gate.');
+export const CreateListingModal: React.FC<{ isOpen: boolean; onClose: () => void; listingToEdit?: MarketListing | null }> = ({
+  isOpen,
+  onClose,
+  listingToEdit
+}) => {
+  const { createListing, updateListing, currentUser, isLoadingListings } = useAgriStore();
+
+  const [crop, setCrop] = useState(listingToEdit?.crop || 'Basmati Paddy (Pusa 1121)');
+  const [variety, setVariety] = useState(listingToEdit?.variety || 'Aged 1-Year Extra Long Grain');
+  const [quantity, setQuantity] = useState(listingToEdit?.quantityQuintals || 80);
+  const [price, setPrice] = useState(listingToEdit?.pricePerQuintal || 3800);
+  const [minOrder, setMinOrder] = useState(listingToEdit?.minOrderQuintals || 10);
+  const [isOrganic, setIsOrganic] = useState(listingToEdit?.isOrganic ?? true);
+  const [grade, setGrade] = useState<'Grade A' | 'Grade B' | 'Fair Average Quality'>(listingToEdit?.qualityGrade || 'Grade A');
+  const [imageUrl, setImageUrl] = useState(listingToEdit?.imageUrl || PRESET_PHOTOS[0].url);
+  const [description, setDescription] = useState(listingToEdit?.description || 'Clean sun-dried grain harvested directly from farm gate.');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [suggestedMsp, setSuggestedMsp] = useState(2320);
+  const [suggestedMarketAvg, setSuggestedMarketAvg] = useState(3750);
+
+  React.useEffect(() => {
+    if (listingToEdit) {
+      setCrop(listingToEdit.crop);
+      setVariety(listingToEdit.variety);
+      setQuantity(listingToEdit.quantityQuintals);
+      setPrice(listingToEdit.pricePerQuintal);
+      setMinOrder(listingToEdit.minOrderQuintals);
+      setIsOrganic(listingToEdit.isOrganic);
+      setGrade(listingToEdit.qualityGrade);
+      setImageUrl(listingToEdit.imageUrl);
+      setDescription(listingToEdit.description);
+    } else if (!isOpen) {
+      // reset form
+      setCrop('Basmati Paddy (Pusa 1121)');
+      setVariety('Aged 1-Year Extra Long Grain');
+      setQuantity(80);
+      setPrice(3800);
+      setMinOrder(10);
+      setIsOrganic(true);
+      setGrade('Grade A');
+      setImageUrl(PRESET_PHOTOS[0].url);
+      setDescription('Clean sun-dried grain harvested directly from farm gate.');
+    }
+  }, [listingToEdit, isOpen]);
+
+  React.useEffect(() => {
+    if (!isOpen || !crop) return;
+    const fetchSuggestion = async () => {
+      try {
+        const res = await api.getPriceSuggestion(crop);
+        setSuggestedMsp(res.mspPrice);
+        setSuggestedMarketAvg(res.suggestedPrice);
+      } catch (err) {
+        // use fallback if backend fails
+      }
+    };
+    const timer = setTimeout(fetchSuggestion, 600);
+    return () => clearTimeout(timer);
+  }, [crop, isOpen]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    createListing({
+    setIsSubmitting(true);
+    
+    const payload = {
       farmerName: currentUser.name,
       farmerPhone: currentUser.phone,
       farmerLocation: currentUser.village,
@@ -54,10 +104,21 @@ export const CreateListingModal: React.FC<{ isOpen: boolean; onClose: () => void
       qualityGrade: grade,
       imageUrl,
       description,
-      harvestDate: 'August 2026',
+      harvestDate: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
       moistureContent: '12.2%'
-    });
-    onClose();
+    };
+
+    let success = false;
+    if (listingToEdit) {
+      success = await updateListing(listingToEdit.id, payload);
+    } else {
+      success = await createListing(payload);
+    }
+
+    setIsSubmitting(false);
+    if (success) {
+      onClose();
+    }
   };
 
   return (
@@ -170,10 +231,15 @@ export const CreateListingModal: React.FC<{ isOpen: boolean; onClose: () => void
 
             <button
               type="submit"
-              className="w-full py-3 rounded-xl gradient-agri text-[#212121] font-bold text-xs shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-2 glow-btn"
+              disabled={isSubmitting}
+              className={`w-full py-3 rounded-xl gradient-agri text-[#212121] font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-95 glow-btn'}`}
             >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Publish Listing to Marketplace</span>
+              {isSubmitting ? (
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <CheckCircle2 className="w-4 h-4" />
+              )}
+              <span>{isSubmitting ? 'Publishing...' : 'Publish Listing to Marketplace'}</span>
             </button>
           </form>
 
@@ -182,8 +248,8 @@ export const CreateListingModal: React.FC<{ isOpen: boolean; onClose: () => void
             <AIPriceAssistant
               cropName={crop}
               farmerPrice={price}
-              mspPrice={2320}
-              marketAvg={3750}
+              mspPrice={suggestedMsp}
+              marketAvg={suggestedMarketAvg}
             />
 
             <div>

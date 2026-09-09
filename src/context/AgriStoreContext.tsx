@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { API_BASE } from '../api/client';
+import { API_BASE, api } from '../api/client';
 import {
   UserRole,
   FarmerInterfaceTab,
@@ -855,9 +855,13 @@ interface AgriStoreContextType {
   paymentRecords: PaymentRecord[];
   updatePaymentRecord: (recordId: string, status: PaymentRecord['paymentStatus'], grade?: PaymentRecord['qualityGrade']) => void;
   marketListings: MarketListing[];
-  createListing: (listing: Omit<MarketListing, 'id' | 'postedDate' | 'status'>) => void;
-  deleteListing: (id: string) => void;
-  toggleListingStatus: (id: string) => void;
+  isLoadingListings: boolean;
+  fetchMyListings: () => Promise<void>;
+  fetchAllListings: (params?: Record<string, string>) => Promise<void>;
+  createListing: (listing: Omit<MarketListing, 'id' | 'postedDate' | 'status'>) => Promise<boolean>;
+  updateListing: (id: string, listing: Partial<MarketListing>) => Promise<boolean>;
+  deleteListing: (id: string) => Promise<boolean>;
+  toggleListingStatus: (id: string) => Promise<boolean>;
   rfidLogs: RFIDLog[];
   weatherForecast: WeatherDay[];
   smsAlertActive: boolean;
@@ -1225,41 +1229,88 @@ export const AgriStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  const createListing = (listingData: Omit<MarketListing, 'id' | 'postedDate' | 'status'>) => {
-    const newListing: MarketListing = {
-      ...listingData,
-      id: 'listing-' + Date.now(),
-      postedDate: 'Just now',
-      status: 'active'
-    };
-    setMarketListings((prev) => [newListing, ...prev]);
-    addToast(
-      'success',
-      'Listing Published Live',
-      `${newListing.crop} is now visible to wholesale buyers in the open marketplace.`
-    );
+  const [isLoadingListings, setIsLoadingListings] = useState(false);
+
+  const fetchMyListings = async () => {
+    try {
+      setIsLoadingListings(true);
+      const data = await api.getMyListings() as MarketListing[];
+      setMarketListings(data);
+    } catch (err) {
+      addToast('alert', 'Error', 'Failed to fetch your listings.');
+    } finally {
+      setIsLoadingListings(false);
+    }
   };
 
-  const deleteListing = (id: string) => {
-    setMarketListings((prev) => prev.filter((item) => item.id !== id));
-    addToast('info', 'Listing Removed', 'Produce listing was removed from the open marketplace.');
+  const fetchAllListings = async (params?: Record<string, string>) => {
+    try {
+      setIsLoadingListings(true);
+      const data = await api.getListings(params) as MarketListing[];
+      setMarketListings(data);
+    } catch (err) {
+      addToast('alert', 'Error', 'Failed to fetch marketplace listings.');
+    } finally {
+      setIsLoadingListings(false);
+    }
   };
 
-  const toggleListingStatus = (id: string) => {
-    setMarketListings((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          const nextStatus = item.status === 'active' ? 'sold' : 'active';
-          addToast(
-            'success',
-            'Listing Status Changed',
-            `Marked ${item.crop} as ${nextStatus.toUpperCase()}`
-          );
-          return { ...item, status: nextStatus };
-        }
-        return item;
-      })
-    );
+  const createListing = async (listingData: Omit<MarketListing, 'id' | 'postedDate' | 'status'>) => {
+    try {
+      setIsLoadingListings(true);
+      await api.createListing(listingData);
+      await fetchMyListings();
+      addToast(
+        'success',
+        'Listing Published Live',
+        `${listingData.crop} is now visible to wholesale buyers in the open marketplace.`
+      );
+      return true;
+    } catch (err) {
+      addToast('alert', 'Error', 'Failed to create listing.');
+      return false;
+    } finally {
+      setIsLoadingListings(false);
+    }
+  };
+
+  const updateListing = async (id: string, listingData: Partial<MarketListing>) => {
+    try {
+      setIsLoadingListings(true);
+      await api.updateListing(id, listingData);
+      await fetchMyListings();
+      addToast('success', 'Listing Updated', 'Your produce listing has been updated successfully.');
+      return true;
+    } catch (err) {
+      addToast('alert', 'Error', 'Failed to update listing.');
+      return false;
+    } finally {
+      setIsLoadingListings(false);
+    }
+  };
+
+  const deleteListing = async (id: string) => {
+    try {
+      await api.deleteListing(id);
+      await fetchMyListings();
+      addToast('info', 'Listing Removed', 'Produce listing was removed from the open marketplace.');
+      return true;
+    } catch (err) {
+      addToast('alert', 'Error', 'Failed to delete listing.');
+      return false;
+    }
+  };
+
+  const toggleListingStatus = async (id: string) => {
+    try {
+      await api.toggleSold(id);
+      await fetchMyListings();
+      addToast('success', 'Listing Status Changed', 'Successfully toggled listing status.');
+      return true;
+    } catch (err) {
+      addToast('alert', 'Error', 'Failed to toggle listing status.');
+      return false;
+    }
   };
 
   const toggleSmsAlert = () => {
@@ -1465,7 +1516,11 @@ export const AgriStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         paymentRecords,
         updatePaymentRecord,
         marketListings,
+        isLoadingListings,
+        fetchMyListings,
+        fetchAllListings,
         createListing,
+        updateListing,
         deleteListing,
         toggleListingStatus,
         rfidLogs,
