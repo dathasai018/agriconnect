@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAgriStore } from '../../context/AgriStoreContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { FarmerView } from '../../types';
+import { MarketListing } from '../../types';
 import { FarmerHomeScreen } from './FarmerHomeScreen';
 import { FarmerBottomNav } from './FarmerBottomNav';
 import { SimpleMandiBooking } from './govt/SimpleMandiBooking';
@@ -35,13 +36,25 @@ export const FarmerDashboard: React.FC = () => {
   const { t } = useLanguage();
   const [view, setView] = useState<FarmerView>('home');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [listingToEdit, setListingToEdit] = useState<any>(null);
+  const [listingToEdit, setListingToEdit] = useState<MarketListing | null>(null);
 
   React.useEffect(() => {
     if (view === 'market') {
       fetchMyListings();
     }
   }, [view]);
+
+  // Opens the create/edit modal. Called from both the home screen "SELL MY CROP"
+  // button and the "Post New Produce" / "Edit" buttons inside MyListingsGrid.
+  const openCreateModal = (listing?: MarketListing) => {
+    setListingToEdit(listing || null);
+    setIsCreateModalOpen(true);
+  };
+
+  const closeCreateModal = () => {
+    setIsCreateModalOpen(false);
+    setListingToEdit(null);
+  };
 
   return (
     <div className="min-h-screen pb-20 sm:pb-8">
@@ -107,7 +120,7 @@ export const FarmerDashboard: React.FC = () => {
             ACTIVE VIEW RENDERING
         ───────────────────────────────────────────────────────────── */}
         {view === 'home' && (
-          <FarmerHomeScreen onNavigate={setView} />
+          <FarmerHomeScreen onNavigate={setView} onOpenSellModal={() => openCreateModal()} />
         )}
 
         {view === 'mandi' && (
@@ -160,21 +173,21 @@ export const FarmerDashboard: React.FC = () => {
         {view === 'market' && (
           <div className="space-y-6 animate-in fade-in duration-200">
             <HarvestAdvisory />
-            <MyListingsGrid onOpenCreateModal={(listing) => {
-              setListingToEdit(listing || null);
-              setIsCreateModalOpen(true);
-            }} />
-            <CreateListingModal
-              isOpen={isCreateModalOpen}
-              onClose={() => setIsCreateModalOpen(false)}
-              listingToEdit={listingToEdit}
-            />
+            <MyListingsGrid onOpenCreateModal={openCreateModal} />
           </div>
         )}
       </div>
 
       {/* Fixed Bottom Navigation (Mobile) */}
       <FarmerBottomNav activeView={view} onNavigate={setView} />
+
+      {/* CreateListingModal — rendered at dashboard root so it works from ANY view,
+          including the home screen "🌾 SELL MY CROP" button */}
+      <CreateListingModal
+        isOpen={isCreateModalOpen}
+        onClose={closeCreateModal}
+        listingToEdit={listingToEdit}
+      />
     </div>
   );
 };

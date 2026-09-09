@@ -15,14 +15,18 @@ import {
   ChevronRight,
   ShieldCheck,
   PhoneCall,
-  Sparkles
+  Sparkles,
+  ShoppingBag,
+  Tag,
+  ArrowRight
 } from 'lucide-react';
 
 interface FarmerHomeScreenProps {
   onNavigate: (view: FarmerView) => void;
+  onOpenSellModal: () => void;
 }
 
-export const FarmerHomeScreen: React.FC<FarmerHomeScreenProps> = ({ onNavigate }) => {
+export const FarmerHomeScreen: React.FC<FarmerHomeScreenProps> = ({ onNavigate, onOpenSellModal }) => {
   const { currentUser, weatherForecast, myBookedSlot, setIsAssistantOpen } = useAgriStore();
   const { t } = useLanguage();
 
@@ -92,6 +96,60 @@ export const FarmerHomeScreen: React.FC<FarmerHomeScreenProps> = ({ onNavigate }
               My Slot
             </button>
           )}
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════
+          🌾 SELL MY CROP — Prominent Hero Action Card
+          Opens the existing CreateListingModal directly from home screen.
+          No separate page, no duplicate form.
+      ══════════════════════════════════════════════════════════════ */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-700 via-emerald-600 to-teal-500 p-1 shadow-lg">
+        <div className="rounded-[22px] bg-gradient-to-br from-emerald-700 via-emerald-600 to-teal-500 p-5 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-4xl sm:text-5xl shrink-0 shadow-inner">
+                🌾
+              </div>
+              <div>
+                <p className="text-emerald-100 text-xs font-semibold uppercase tracking-widest mb-1">
+                  Open Direct Marketplace
+                </p>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight">
+                  Sell My Crop
+                </h2>
+                <p className="text-emerald-100 text-sm mt-1 leading-snug">
+                  List your harvested produce and connect directly with wholesale buyers — no middlemen.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={onOpenSellModal}
+              aria-label="Sell my crop — open listing form"
+              className="group w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-white text-emerald-800 font-extrabold text-base shadow-lg hover:bg-emerald-50 active:scale-95 transition-all focus:outline-none focus:ring-4 focus:ring-white/50"
+            >
+              <ShoppingBag className="w-5 h-5" />
+              <span>SELL MY CROP</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
+
+          {/* Sub-info strip */}
+          <div className="mt-4 pt-4 border-t border-white/20 flex flex-wrap items-center gap-4 text-xs text-emerald-100">
+            <span className="flex items-center gap-1.5">
+              <Tag className="w-3.5 h-3.5" />
+              AI-suggested prices
+            </span>
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Verified buyers only
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              Zero commission
+            </span>
+          </div>
         </div>
       </div>
 
