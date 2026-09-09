@@ -117,24 +117,34 @@ export const FarmerBottomNav: React.FC<FarmerBottomNavProps> = ({ activeView, on
             </div>
 
             {/* Language Switcher in Drawer */}
-            <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-              <span className="text-xs text-gray-500 font-medium">భాష / Language:</span>
-              <div className="flex items-center gap-2">
+            <div className="pt-2 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs text-gray-500 font-medium">भाषा / Language:</span>
+              <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => setLanguage('en')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
                     language === 'en'
-                      ? 'bg-emerald-700 text-white'
+                      ? 'bg-emerald-700 text-white shadow-xs'
                       : 'bg-gray-100 text-gray-700'
                   }`}
                 >
                   English
                 </button>
                 <button
+                  onClick={() => setLanguage('hi')}
+                  className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
+                    language === 'hi'
+                      ? 'bg-emerald-700 text-white shadow-xs'
+                      : 'bg-gray-100 text-gray-700'
+                  }`}
+                >
+                  हिंदी
+                </button>
+                <button
                   onClick={() => setLanguage('te')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
                     language === 'te'
-                      ? 'bg-emerald-700 text-white'
+                      ? 'bg-emerald-700 text-white shadow-xs'
                       : 'bg-gray-100 text-gray-700'
                   }`}
                 >

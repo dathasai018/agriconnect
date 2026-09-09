@@ -30,20 +30,30 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
 
   if (!listing) return null;
 
-  const handleSimulateCall = () => {
+  const cleanPhone = listing.farmerPhone.replace(/\D/g, '');
+  // Format Indian phone for WhatsApp (ensure 91 prefix if 10 digits)
+  const waPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+
+  const handleCall = () => {
     setShowPhone(true);
     addToast(
       'info',
-      'Connecting Call to Farmer',
-      `Dialing ${listing.farmerPhone} (${listing.farmerName}). Connecting via AgriConnect secure bridge...`
+      'Calling Farmer',
+      `Dialing ${listing.farmerPhone} (${listing.farmerName})...`
     );
+    window.location.href = `tel:${listing.farmerPhone}`;
   };
 
-  const handleSimulateWhatsApp = () => {
+  const handleWhatsApp = () => {
+    const message = encodeURIComponent(
+      `Namaste ${listing.farmerName} ji! I found your listing for ${listing.crop} (${listing.variety || ''}) on AgriConnect. I am interested in purchasing ${offerQuantity} Quintals at ₹${listing.pricePerQuintal}/Qtl. Please let me know if available.`
+    );
+    const waUrl = `https://wa.me/${waPhone}?text=${message}`;
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
     addToast(
       'success',
-      'WhatsApp Inquiry Opened',
-      `Pre-filled inquiry sent for ${offerQuantity} Qtl of ${listing.crop} to ${listing.farmerName}.`
+      'Opening WhatsApp',
+      `Connecting with ${listing.farmerName} regarding ${listing.crop}...`
     );
   };
 
@@ -160,7 +170,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                 </div>
               ) : (
                 <button
-                  onClick={handleSimulateCall}
+                  onClick={handleCall}
                   className="px-3 py-1.5 bg-white border border-[#0D7377] text-[#0D7377] hover:bg-[#0D7377] hover:text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs"
                 >
                   <Phone className="w-3.5 h-3.5" />
@@ -169,20 +179,20 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
               )}
             </div>
 
-            <div className="flex gap-2.5 pt-1">
+            <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
               <button
-                onClick={handleSimulateCall}
+                onClick={handleCall}
                 className="flex-1 py-2.5 bg-[#0D7377] text-white rounded-xl font-bold text-xs hover:bg-[#095457] transition-all flex items-center justify-center gap-1.5 shadow-xs"
               >
                 <Phone className="w-4 h-4" />
-                <span>Call Farmer Now</span>
+                <span>Call Farmer Now ({listing.farmerPhone})</span>
               </button>
               <button
-                onClick={handleSimulateWhatsApp}
+                onClick={handleWhatsApp}
                 className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-xs hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5 shadow-xs"
               >
                 <MessageSquare className="w-4 h-4" />
-                <span>WhatsApp Order Inquiry</span>
+                <span>Chat on WhatsApp</span>
               </button>
             </div>
           </div>

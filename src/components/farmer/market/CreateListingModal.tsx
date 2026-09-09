@@ -9,7 +9,8 @@ import {
   CheckCircle2,
   Image as ImageIcon,
   MapPin,
-  Tag
+  Tag,
+  Camera
 } from 'lucide-react';
 
 import { api } from '../../../api/client';
@@ -210,9 +211,38 @@ export const CreateListingModal: React.FC<{ isOpen: boolean; onClose: () => void
               </div>
             </div>
 
-            {/* Photo Preset Selector */}
+            {/* Photo Selection: Custom Camera Upload OR Presets */}
             <div>
-              <label className="block text-xs font-semibold text-[#212121] mb-1.5">Choose Photo Preset</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-[#212121]">Produce Photo</label>
+                <label className="cursor-pointer text-[11px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                  <Camera className="w-3.5 h-3.5" />
+                  <span>Take / Upload Photo</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      // Read file as base64 data URL
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        if (typeof reader.result === 'string') {
+                          setImageUrl(reader.result);
+                        }
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </label>
+              </div>
+
+              <p className="text-[11px] text-gray-500 mb-2">
+                Choose a photo preset or tap above to take a photo of your actual produce:
+              </p>
+
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {PRESET_PHOTOS.map((p, idx) => (
                   <button

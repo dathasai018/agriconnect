@@ -9,13 +9,33 @@ import { CentreAdminDashboard } from './components/admin/CentreAdminDashboard';
 import { AuthModal } from './components/AuthModal';
 import { ToastContainer } from './components/shared/ToastContainer';
 import { GeminiAssistant } from './components/shared/GeminiAssistant';
-import { Sprout, ShieldCheck, Heart } from 'lucide-react';
+import { Sprout, ShieldCheck, Heart, WifiOff } from 'lucide-react';
 
 const AppContent: React.FC = () => {
   const { activeRole } = useAgriStore();
+  const [isOffline, setIsOffline] = React.useState(!navigator.onLine);
+
+  React.useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA] text-[#212121] selection:bg-[#14FFEC] selection:text-[#212121]">
+      {/* Offline Alert Strip */}
+      {isOffline && (
+        <div className="bg-amber-600 text-white text-xs font-semibold px-4 py-2 flex items-center justify-center gap-2 shadow-sm animate-in slide-in-from-top duration-300">
+          <WifiOff className="w-4 h-4 shrink-0" />
+          <span>You are currently offline. Showing cached mandi prices and booking records.</span>
+        </div>
+      )}
+
       {/* Main App Navigation */}
       <Navbar />
 

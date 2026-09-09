@@ -55,7 +55,7 @@ export const Navbar: React.FC = () => {
 
         {/* Right Nav Utilities */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Quick Bilingual English | తెలుగు Toggle */}
+          {/* Quick Trilingual English | हिंदी | తెలుగు Toggle */}
           <div className="flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200 text-xs">
             <button
               onClick={() => setLanguage('en')}
@@ -66,6 +66,16 @@ export const Navbar: React.FC = () => {
               }`}
             >
               EN
+            </button>
+            <button
+              onClick={() => setLanguage('hi')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                language === 'hi'
+                  ? 'bg-emerald-700 text-white shadow-xs'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              हिंदी
             </button>
             <button
               onClick={() => setLanguage('te')}
