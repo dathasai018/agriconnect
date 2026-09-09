@@ -30,6 +30,8 @@ export const api = {
     request<{ success: boolean; message: string; devOtp?: string; smsDispatched?: boolean; gateway?: string; phone?: string }>('POST', '/auth/send-otp', { phone }),
   getSmsStatus: () =>
     request<{ realSmsConfigured: boolean; activeProviders: string[]; message: string }>('GET', '/auth/sms-status'),
+  configureSms: (data: Record<string, string>) =>
+    request<{ success: boolean; message: string }>('POST', '/auth/configure-sms', data),
   verifyOtp: (phone: string, otp: string, role?: string, name?: string) =>
     request<{ token: string; user: Record<string, unknown> }>('POST', '/auth/verify-otp', { phone, otp, role, name }),
   verifyAadhaar: (aadhaarNumber: string) =>

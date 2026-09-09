@@ -131,6 +131,39 @@ app.get('/api/auth/sms-status', (req, res) => {
   });
 });
 
+// POST /api/auth/configure-sms
+app.post('/api/auth/configure-sms', (req, res) => {
+  const { provider, apiKey, twilioSid, twilioToken, twilioPhone, msg91AuthKey, msg91TemplateId } = req.body;
+  const envPath = path.join(__dirname, '.env');
+  let envContent = '';
+  try {
+    if (fs.existsSync(envPath)) envContent = fs.readFileSync(envPath, 'utf8');
+  } catch (_) {}
+
+  if (provider === '2Factor.in' && apiKey) {
+    process.env.TWOFACTOR_API_KEY = apiKey.trim();
+    envContent += `\nTWOFACTOR_API_KEY=${apiKey.trim()}\n`;
+  } else if (provider === 'Fast2SMS' && apiKey) {
+    process.env.FAST2SMS_API_KEY = apiKey.trim();
+    envContent += `\nFAST2SMS_API_KEY=${apiKey.trim()}\n`;
+  } else if (provider === 'Twilio' && twilioSid && twilioToken) {
+    process.env.TWILIO_ACCOUNT_SID = twilioSid.trim();
+    process.env.TWILIO_AUTH_TOKEN = twilioToken.trim();
+    if (twilioPhone) process.env.TWILIO_PHONE_NUMBER = twilioPhone.trim();
+    envContent += `\nTWILIO_ACCOUNT_SID=${twilioSid.trim()}\nTWILIO_AUTH_TOKEN=${twilioToken.trim()}\nTWILIO_PHONE_NUMBER=${twilioPhone?.trim() || ''}\n`;
+  } else if (provider === 'MSG91' && msg91AuthKey && msg91TemplateId) {
+    process.env.MSG91_AUTH_KEY = msg91AuthKey.trim();
+    process.env.MSG91_TEMPLATE_ID = msg91TemplateId.trim();
+    envContent += `\nMSG91_AUTH_KEY=${msg91AuthKey.trim()}\nMSG91_TEMPLATE_ID=${msg91TemplateId.trim()}\n`;
+  }
+
+  try {
+    fs.writeFileSync(envPath, envContent, 'utf8');
+  } catch (_) {}
+
+  res.json({ success: true, message: `Real SMS provider configured: ${provider}` });
+});
+
 // POST /api/auth/send-otp
 app.post('/api/auth/send-otp', async (req, res) => {
   const { phone } = req.body;

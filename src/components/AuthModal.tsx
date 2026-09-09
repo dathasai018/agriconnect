@@ -5,7 +5,8 @@ import { UserRole } from '../types';
 import { api, setAuthToken, setStoredUser } from '../api/client';
 import {
   X, Phone, ShieldCheck, Smartphone, Loader2, ChevronRight,
-  Leaf, Users, Building2, KeyRound, User, RotateCcw, CheckCircle2
+  Leaf, Users, Building2, KeyRound, User, RotateCcw, CheckCircle2,
+  Settings, Check
 } from 'lucide-react';
 
 const ROLE_CONFIG: Record<UserRole, {
@@ -30,6 +31,36 @@ export const AuthModal: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [smsDeliveryInfo, setSmsDeliveryInfo] = useState<{ dispatched: boolean; gateway?: string } | null>(null);
+  const [showSmsConfig, setShowSmsConfig] = useState(false);
+  const [configProvider, setConfigProvider] = useState<'2Factor.in' | 'Fast2SMS' | 'Twilio'>('2Factor.in');
+  const [configKey, setConfigKey] = useState('');
+  const [twilioSid, setTwilioSid] = useState('');
+  const [twilioToken, setTwilioToken] = useState('');
+  const [twilioPhone, setTwilioPhone] = useState('');
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [configSuccess, setConfigSuccess] = useState<string | null>(null);
+
+  const handleSaveSmsConfig = async () => {
+    setSavingConfig(true);
+    try {
+      await api.configureSms({
+        provider: configProvider,
+        apiKey: configKey,
+        twilioSid,
+        twilioToken,
+        twilioPhone
+      });
+      setConfigSuccess(`Real SMS configured via ${configProvider}! Active now.`);
+      setTimeout(() => {
+        setShowSmsConfig(false);
+        setConfigSuccess(null);
+      }, 1500);
+    } catch (e: any) {
+      setError('Failed to save SMS configuration: ' + (e?.message || 'Error'));
+    } finally {
+      setSavingConfig(false);
+    }
+  };
 
   if (!isAuthModalOpen) return null;
 
@@ -363,6 +394,127 @@ export const AuthModal: React.FC = () => {
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
                 <span>{loading ? 'Verifying...' : 'Verify Aadhaar & Enter'}</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Real SMS Gateway Setup Drawer / Toggle */}
+        <div className="border-t border-gray-100 bg-gray-50/50 p-4">
+          {!showSmsConfig ? (
+            <button
+              onClick={() => setShowSmsConfig(true)}
+              className="w-full flex items-center justify-between text-xs text-gray-500 hover:text-emerald-700 font-medium transition-colors"
+            >
+              <span className="flex items-center gap-1.5">
+                <Settings className="w-3.5 h-3.5" />
+                Configure Real SMS Gateway (Twilio / 2Factor / Fast2SMS)
+              </span>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                  <Settings className="w-3.5 h-3.5 text-emerald-700" />
+                  Real SMS Gateway Settings
+                </span>
+                <button
+                  onClick={() => setShowSmsConfig(false)}
+                  className="text-xs text-gray-400 hover:text-gray-700"
+                >
+                  Cancel
+                </button>
+              </div>
+
+              {/* Provider Selector */}
+              <div className="grid grid-cols-3 gap-1.5 text-xs">
+                {(['2Factor.in', 'Fast2SMS', 'Twilio'] as const).map(p => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setConfigProvider(p)}
+                    className={`py-1.5 px-2 rounded-xl font-bold border transition-all text-[11px] ${
+                      configProvider === p
+                        ? 'bg-emerald-700 text-white border-emerald-700 shadow-xs'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+
+              {configProvider === '2Factor.in' && (
+                <div className="space-y-1.5">
+                  <input
+                    type="text"
+                    placeholder="Enter 2Factor.in API Key"
+                    value={configKey}
+                    onChange={e => setConfigKey(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-gray-200 bg-white outline-none focus:border-emerald-600"
+                  />
+                  <p className="text-[10px] text-gray-500">
+                    Get a free API key at <a href="https://2factor.in" target="_blank" rel="noreferrer" className="text-emerald-700 underline font-semibold">2factor.in</a> (instant OTP signup).
+                  </p>
+                </div>
+              )}
+
+              {configProvider === 'Fast2SMS' && (
+                <div className="space-y-1.5">
+                  <input
+                    type="text"
+                    placeholder="Enter Fast2SMS Authorization Key"
+                    value={configKey}
+                    onChange={e => setConfigKey(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-gray-200 bg-white outline-none focus:border-emerald-600"
+                  />
+                  <p className="text-[10px] text-gray-500">
+                    Get a key at <a href="https://www.fast2sms.com" target="_blank" rel="noreferrer" className="text-emerald-700 underline font-semibold">fast2sms.com</a> (₹50 free credits).
+                  </p>
+                </div>
+              )}
+
+              {configProvider === 'Twilio' && (
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="Twilio Account SID (AC...)"
+                    value={twilioSid}
+                    onChange={e => setTwilioSid(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-gray-200 bg-white outline-none focus:border-emerald-600"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Twilio Auth Token"
+                    value={twilioToken}
+                    onChange={e => setTwilioToken(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-gray-200 bg-white outline-none focus:border-emerald-600"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Twilio Phone Number (+1...)"
+                    value={twilioPhone}
+                    onChange={e => setTwilioPhone(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-gray-200 bg-white outline-none focus:border-emerald-600"
+                  />
+                </div>
+              )}
+
+              {configSuccess && (
+                <p className="text-xs text-emerald-800 bg-emerald-50 p-2 rounded-xl border border-emerald-200 font-semibold flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>{configSuccess}</span>
+                </p>
+              )}
+
+              <button
+                onClick={handleSaveSmsConfig}
+                disabled={savingConfig || (configProvider !== 'Twilio' && !configKey.trim()) || (configProvider === 'Twilio' && (!twilioSid.trim() || !twilioToken.trim()))}
+                className="w-full py-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
+              >
+                {savingConfig ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                <span>Save & Activate Real SMS</span>
               </button>
             </div>
           )}
