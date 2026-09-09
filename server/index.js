@@ -11,6 +11,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DATA_FILE = path.join(__dirname, 'data.json');
 
+// Auto-load .env configuration if present
+try {
+  const envPath = path.join(__dirname, '.env');
+  if (fs.existsSync(envPath) && typeof process.loadEnvFile === 'function') {
+    process.loadEnvFile(envPath);
+    console.log('[Environment] Loaded server/.env configuration successfully');
+  }
+} catch (e) {
+  console.log('[Environment] Note: server/.env not loaded:', e.message);
+}
+
 const JWT_SECRET = process.env.JWT_SECRET || 'agriconnect-dev-secret-2026';
 const PORT = process.env.PORT || 5000;
 
@@ -103,6 +114,23 @@ function requireRole(...roles) {
 // AUTH ROUTES
 // ═══════════════════════════════════════════════════════════════════
 
+// GET /api/auth/sms-status
+app.get('/api/auth/sms-status', (req, res) => {
+  const providers = [];
+  if (process.env.TWOFACTOR_API_KEY) providers.push('2Factor.in');
+  if (process.env.FAST2SMS_API_KEY) providers.push('Fast2SMS');
+  if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) providers.push('Twilio');
+  if (process.env.MSG91_AUTH_KEY) providers.push('MSG91');
+
+  res.json({
+    realSmsConfigured: providers.length > 0,
+    activeProviders: providers,
+    message: providers.length > 0 
+      ? `Real SMS active via: ${providers.join(', ')}`
+      : 'Real SMS not configured. Add TWILIO_*, TWOFACTOR_API_KEY, or FAST2SMS_API_KEY to server/.env'
+  });
+});
+
 // POST /api/auth/send-otp
 app.post('/api/auth/send-otp', async (req, res) => {
   const { phone } = req.body;
@@ -115,8 +143,25 @@ app.post('/api/auth/send-otp', async (req, res) => {
   writeData(data);
 
   let smsSent = false;
-  // 1. Try Fast2SMS if key provided (Free/Cheap Indian SMS gateway)
-  if (process.env.FAST2SMS_API_KEY) {
+  let activeGateway = null;
+
+  // 1. Try 2Factor.in (Very popular & reliable Indian OTP gateway)
+  if (!smsSent && process.env.TWOFACTOR_API_KEY) {
+    try {
+      const tfUrl = `https://2factor.in/v3/${process.env.TWOFACTOR_API_KEY}/SMS/${cleanPhone}/${otp}/AgriConnect`;
+      const tfRes = await fetch(tfUrl);
+      const tfData = await tfRes.json();
+      if (tfData.Status === 'Success') {
+        smsSent = true;
+        activeGateway = '2Factor.in';
+      }
+    } catch (e) {
+      console.log('[2Factor SMS Error]', e.message);
+    }
+  }
+
+  // 2. Try Fast2SMS (DLT / Quick OTP India)
+  if (!smsSent && process.env.FAST2SMS_API_KEY) {
     try {
       const fRes = await fetch('https://www.fast2sms.com/dev/bulkV2', {
         method: 'POST',
@@ -131,39 +176,87 @@ app.post('/api/auth/send-otp', async (req, res) => {
         })
       });
       const fData = await fRes.json();
-      if (fData.return) smsSent = true;
+      if (fData.return) {
+        smsSent = true;
+        activeGateway = 'Fast2SMS';
+      }
     } catch (e) {
       console.log('[Fast2SMS Error]', e.message);
     }
   }
 
-  // 2. Try Twilio if credentials configured
-  if (!smsSent && process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
+  // 3. Try Twilio Verify API or Messages API
+  if (!smsSent && process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
     try {
       const authHeader = 'Basic ' + Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64');
-      const params = new URLSearchParams();
-      params.append('To', `+91${cleanPhone}`);
-      params.append('From', process.env.TWILIO_PHONE_NUMBER);
-      params.append('Body', `Your AgriConnect APMC Portal OTP is ${otp}. Valid for 10 minutes. Do not share.`);
 
-      const twRes = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Messages.json`, {
-        method: 'POST',
-        headers: {
-          Authorization: authHeader,
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: params.toString()
-      });
-      if (twRes.ok) smsSent = true;
+      // Check if Twilio Verify Service SID is provided
+      if (process.env.TWILIO_VERIFY_SERVICE_SID) {
+        const verifyParams = new URLSearchParams();
+        verifyParams.append('To', `+91${cleanPhone}`);
+        verifyParams.append('Channel', 'sms');
+
+        const vRes = await fetch(`https://verify.twilio.com/v2/Services/${process.env.TWILIO_VERIFY_SERVICE_SID}/Verifications`, {
+          method: 'POST',
+          headers: {
+            Authorization: authHeader,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: verifyParams.toString()
+        });
+        if (vRes.ok) {
+          smsSent = true;
+          activeGateway = 'Twilio Verify';
+        }
+      } else if (process.env.TWILIO_PHONE_NUMBER) {
+        // Standard Twilio Messages API
+        const params = new URLSearchParams();
+        params.append('To', `+91${cleanPhone}`);
+        params.append('From', process.env.TWILIO_PHONE_NUMBER);
+        params.append('Body', `🌾 Your AgriConnect Portal OTP is ${otp}. Valid for 10 minutes. Do not share.`);
+
+        const twRes = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Messages.json`, {
+          method: 'POST',
+          headers: {
+            Authorization: authHeader,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: params.toString()
+        });
+        if (twRes.ok) {
+          smsSent = true;
+          activeGateway = 'Twilio SMS';
+        }
+      }
     } catch (e) {
       console.log('[Twilio SMS Error]', e.message);
     }
   }
 
-  console.log(`[SMS Delivery] OTP for +91 ${cleanPhone}: ${otp} (Real SMS Gateway Dispatched: ${smsSent})`);
+  // 4. Try MSG91 (Indian DLT SMS Gateway)
+  if (!smsSent && process.env.MSG91_AUTH_KEY && process.env.MSG91_TEMPLATE_ID) {
+    try {
+      const msgUrl = `https://control.msg91.com/api/v5/otp?template_id=${process.env.MSG91_TEMPLATE_ID}&mobile=91${cleanPhone}&authkey=${process.env.MSG91_AUTH_KEY}&otp=${otp}`;
+      const msgRes = await fetch(msgUrl, { method: 'POST' });
+      const msgData = await msgRes.json();
+      if (msgData.type === 'success') {
+        smsSent = true;
+        activeGateway = 'MSG91';
+      }
+    } catch (e) {
+      console.log('[MSG91 Error]', e.message);
+    }
+  }
+
+  console.log(`[SMS Delivery] OTP for +91 ${cleanPhone}: ${otp} | Dispatched to Phone: ${smsSent ? `YES (${activeGateway})` : 'NO (Console Only)'}`);
+  
   res.json({
     success: true,
-    message: smsSent ? `OTP sent via SMS to +91 ${cleanPhone}` : `OTP sent to +91 ${cleanPhone}`,
+    smsDispatched: smsSent,
+    gateway: activeGateway,
+    message: smsSent 
+      ? `Real SMS dispatched to +91 ${cleanPhone} via ${activeGateway}` 
+      : `OTP generated for +91 ${cleanPhone}`,
     phone: cleanPhone
   });
 });

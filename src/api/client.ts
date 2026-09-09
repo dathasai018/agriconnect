@@ -27,7 +27,9 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 export const api = {
   // Auth
   sendOtp: (phone: string) =>
-    request<{ message: string; devOtp?: string; smsDispatched?: boolean; phone?: string }>('POST', '/auth/send-otp', { phone }),
+    request<{ success: boolean; message: string; devOtp?: string; smsDispatched?: boolean; gateway?: string; phone?: string }>('POST', '/auth/send-otp', { phone }),
+  getSmsStatus: () =>
+    request<{ realSmsConfigured: boolean; activeProviders: string[]; message: string }>('GET', '/auth/sms-status'),
   verifyOtp: (phone: string, otp: string, role?: string, name?: string) =>
     request<{ token: string; user: Record<string, unknown> }>('POST', '/auth/verify-otp', { phone, otp, role, name }),
   verifyAadhaar: (aadhaarNumber: string) =>

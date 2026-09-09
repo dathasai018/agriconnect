@@ -5,7 +5,7 @@ import { UserRole } from '../types';
 import { api, setAuthToken, setStoredUser } from '../api/client';
 import {
   X, Phone, ShieldCheck, Smartphone, Loader2, ChevronRight,
-  Leaf, Users, Building2, KeyRound, User, RotateCcw
+  Leaf, Users, Building2, KeyRound, User, RotateCcw, CheckCircle2
 } from 'lucide-react';
 
 const ROLE_CONFIG: Record<UserRole, {
@@ -29,6 +29,7 @@ export const AuthModal: React.FC = () => {
   const [aadhaarNumber, setAadhaarNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [smsDeliveryInfo, setSmsDeliveryInfo] = useState<{ dispatched: boolean; gateway?: string } | null>(null);
 
   if (!isAuthModalOpen) return null;
 
@@ -45,7 +46,11 @@ export const AuthModal: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      await api.sendOtp(cleanPhone);
+      const res = await api.sendOtp(cleanPhone);
+      setSmsDeliveryInfo({
+        dispatched: !!res.smsDispatched,
+        gateway: res.gateway
+      });
       setStep(2);
     } catch (_) {
       // If SMS gateway fails or network is offline
@@ -242,6 +247,23 @@ export const AuthModal: React.FC = () => {
                   Enter the 6-digit verification OTP sent to <strong>+91 {phone}</strong>
                 </p>
               </div>
+
+              {/* Real SMS Gateway Indicator */}
+              {smsDeliveryInfo?.dispatched ? (
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 font-semibold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Real SMS dispatched to +91 {phone} via {smsDeliveryInfo.gateway || 'SMS Gateway'}</span>
+                </div>
+              ) : (
+                <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200 text-[11px] text-amber-900 space-y-1">
+                  <p className="font-bold flex items-center gap-1.5">
+                    <span>⚡ Development / Demo Mode</span>
+                  </p>
+                  <p className="text-amber-800 leading-snug">
+                    Real SMS Gateway not active. For testing, use universal OTP: <strong className="font-mono bg-amber-200/80 px-1.5 py-0.5 rounded text-amber-950">123456</strong> (or check server terminal).
+                  </p>
+                </div>
+              )}
 
               {/* [ _ _ _ _ _ _ ] OTP Input */}
               <div>
